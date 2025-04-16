@@ -19,6 +19,7 @@ Denoise your recorded or uploaded audio files in just a click with an elegant St
 
 ## 🗂️ Project Structure
 
+```plaintext
 ai_noise_reducer/
 ├── data/
 │   └── recorded_audio/         # Raw user recordings or uploads
