@@ -79,14 +79,16 @@ Listen to output & view waveform comparison!
 
 
 
-##🧠 Custom CNN Model
+🧠 Custom CNN Model
 Implemented in Notebooks/model.py
 
 Trained on paired noisy/clean audio samples
 
 Supports real-time inference using PyTorch
 
-Replace Denoising_model.pth with your own trained weights if desired.
+Replace Denoising_model.pth with your own trained weights if desired
+
+
 
 📸 Sample Output
 
