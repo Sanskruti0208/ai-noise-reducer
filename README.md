@@ -77,7 +77,9 @@ Apply noise reduction (Demucs / CNN)
 
 Listen to output & view waveform comparison!
 
-🧠 Custom CNN Model
+
+
+##🧠 Custom CNN Model
 Implemented in Notebooks/model.py
 
 Trained on paired noisy/clean audio samples
