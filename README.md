@@ -40,19 +40,19 @@ ai_noise_reducer/
 
 ## 🚀 Getting Started
 
-### 1. Clone the repo
+1. Clone the repo
 
 ```bash
 git clone https://github.com/yourusername/ai-noise-reducer.git
 cd ai-noise-reducer
 
 ```
-###2. Install dependencies
+2. Install dependencies
 Make sure you have Python 3.8 or higher.
 ```
 pip install -r requirements.txt
 ```
-###3. Install Demucs
+3. Install Demucs
 ```
 pip install demucs
 streamlit run main.py
