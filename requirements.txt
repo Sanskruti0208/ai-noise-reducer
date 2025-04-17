@@ -4,3 +4,5 @@ torch
 numpy
 matplotlib
 streamlit
+streamlit-webrtc
+
