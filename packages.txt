@@ -1,3 +1,2 @@
 libportaudio2
-libportaudio-dev
 ffmpeg
