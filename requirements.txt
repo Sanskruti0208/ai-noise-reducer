@@ -1,3 +1,4 @@
+python_version >=3.11, <3.12
 aioice==0.10.1
 aiortc==1.10.1
 altair==5.5.0
