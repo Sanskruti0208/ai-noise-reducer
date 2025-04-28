@@ -7,12 +7,12 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ========== PATH FIX FOR CUSTOM MODEL ==========
+# ====== PATH FIX FOR CUSTOM MODEL ======
 sys.path.append(os.path.join(os.path.dirname(__file__), "Notebooks"))
 
-from model import SimpleDenoisingCNN  # Ensure model.py exists in that path
+from model import SimpleDenoisingCNN  # Assuming model.py is inside Notebooks/
 
-# ========== CONFIG ==========
+# ====== CONFIG ======
 RECORD_DURATION = 5  # seconds
 SR = 16000
 
@@ -22,11 +22,12 @@ img_output_dir = os.path.join("output_imgs")
 model_weights_path = r"C:\Users\sansk\Downloads\ai_noise_reduction\model\Denoising_model.pth"
 demucs_model_name = "htdemucs"
 
+# Create folders
 os.makedirs(data_dir, exist_ok=True)
 os.makedirs(output_dir, exist_ok=True)
 os.makedirs(img_output_dir, exist_ok=True)
 
-# ========== LOAD CUSTOM MODEL ==========
+# ====== LOAD CUSTOM MODEL ======
 try:
     model = SimpleDenoisingCNN()
     model.load_state_dict(torch.load(model_weights_path, map_location=torch.device('cpu')))
@@ -36,7 +37,7 @@ except Exception as e:
     print(f"❌ Failed to load model: {e}")
     model = None
 
-# ========== UTILS ==========
+# ====== UTILS ======
 
 def record_audio(filename, duration=RECORD_DURATION, sr=SR):
     print(f"🎤 Recording for {duration} seconds...")
@@ -47,7 +48,6 @@ def record_audio(filename, duration=RECORD_DURATION, sr=SR):
 
 def run_demucs(input_audio):
     print(f"\n🎧 Running Demucs on: {input_audio}")
-
     try:
         subprocess.run([
             "demucs", "--two-stems=vocals", "-n", demucs_model_name, input_audio
@@ -61,7 +61,8 @@ def run_demucs(input_audio):
 
     if os.path.exists(demucs_out_path):
         final_path = os.path.join(output_dir, f"{filename}_denoised_demucs.wav")
-        sf.write(final_path, *sf.read(demucs_out_path))
+        audio, sr = sf.read(demucs_out_path)
+        sf.write(final_path, audio, sr)
         print(f"✅ Denoised output saved to: {final_path}")
         return final_path
     else:
@@ -90,7 +91,7 @@ def plot_waveforms(original_audio, denoised_audio, sr, filename_prefix):
     plt.savefig(img_path)
     plt.close()
 
-    print(f"🖼️  Waveform comparison saved at: {img_path}")
+    print(f"🖼️ Waveform comparison saved at: {img_path}")
     return img_path
 
 def run_custom_denoiser(input_audio):
@@ -100,8 +101,9 @@ def run_custom_denoiser(input_audio):
 
     print(f"\n🎧 Running Custom Denoiser on: {input_audio}")
     audio, sr = sf.read(input_audio)
+
     if len(audio.shape) > 1:
-        audio = audio[:, 0]
+        audio = audio[:, 0]  # Only take first channel if stereo
 
     audio_tensor = torch.tensor(audio, dtype=torch.float32).unsqueeze(0).unsqueeze(0)
 
