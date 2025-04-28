@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ========== PATH FIX FOR CUSTOM MODEL ==========
-sys.path.append(r"C:\Users\sansk\Downloads\ai_noise_reduction\Notebooks")
+sys.path.append(os.path.join(os.path.dirname(__file__), "Notebooks"))
 
 from model import SimpleDenoisingCNN  # Ensure model.py exists in that path
 
