@@ -1,106 +1,91 @@
 import streamlit as st
-import os
-import pandas as pd
-import datetime
-from denoise_audio import run_custom_denoiser, run_demucs, record_audio
-import sounddevice as sd
+import numpy as np
+import torch
+import librosa
+import matplotlib.pyplot as plt
+from io import BytesIO
+from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
+import av
 
-st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
+# Dummy functions for the denoising models (replace these with actual denoising methods)
+def custom_cnn_denoise(audio_data):
+    # Your Custom CNN denoising logic here
+    return audio_data * 0.8  # Dummy denoising logic
 
-st.title("🎧 AI Noise Reducer")
-st.subheader("Denoise your recordings with AI!")
+def demucs_denoise(audio_data):
+    # Your Demucs denoising logic here
+    return audio_data * 0.9  # Dummy denoising logic
 
-# ===== Language Selector (Multilingual Support Placeholder) =====
-language = st.selectbox("🌐 Select Language", ["English", "हिन्दी", "Español", "Français"], index=0)
+# Function to plot waveforms or spectrograms
+def plot_waveforms(original, denoised):
+    fig, axes = plt.subplots(2, 1, figsize=(10, 6))
+    # Original waveform
+    axes[0].plot(original)
+    axes[0].set_title("Original Audio")
+    axes[0].set_xlabel("Samples")
+    axes[0].set_ylabel("Amplitude")
+    # Denoised waveform
+    axes[1].plot(denoised)
+    axes[1].set_title("Denoised Audio")
+    axes[1].set_xlabel("Samples")
+    axes[1].set_ylabel("Amplitude")
+    
+    return fig
 
-# ===== Model Selection =====
-model_choice = st.selectbox("🤖 Choose Denoising Model", ["Demucs", "Custom CNN"])
+# Real-time audio processor for Streamlit WebRTC
+class AudioProcessor(AudioProcessorBase):
+    def recv(self, frame: av.AudioFrame) -> av.AudioFrame:
+        audio = frame.to_ndarray()
+        
+        # Perform denoising (example: choose model based on selection)
+        if model_selection == 'Custom CNN':
+            denoised_audio = custom_cnn_denoise(audio)
+        elif model_selection == 'Demucs':
+            denoised_audio = demucs_denoise(audio)
+        
+        # Plot comparison (if the selected model is Custom CNN or Demucs)
+        fig = plot_waveforms(audio, denoised_audio)
+        st.pyplot(fig)
+        
+        st.audio(denoised_audio, format="audio/wav")
+        
+        return frame
 
-# ===== Noise Reduction Strength Slider =====
-strength = st.slider("🎚️ Noise Reduction Strength", min_value=0, max_value=100, value=80)
+# Streamlit UI
+st.title("🎧 Audio Denoising App")
+st.markdown("Choose a denoising model and either record some audio or upload noisy audio to denoise.")
 
-# ===== Input Method =====
-option = st.radio("Choose input method:", ["Upload Audio", "Record Live Audio"])
+# Language selection
+language = st.selectbox("🌐 Select Language", ["English", "हिन्दी", "Español", "Français", "मराठी"], index=0)
 
-is_streamlit_cloud = "streamlit" in os.environ.get("ST_WORKSPACE", "")
+# Model selection
+model_selection = st.selectbox("Choose Denoising Model", ["Custom CNN", "Demucs" ], index=0)
 
-def process_audio(path_list):
-    for input_path in path_list:
-        st.audio(input_path, format='audio/wav')
+# Streamlit WebRTC for real-time audio recording
+webrtc_streamer(
+    key="audio",
+    mode=WebRtcMode.SENDRECV,
+    audio_processor_factory=AudioProcessor,
+    media_stream_constraints={"audio": True, "video": False},
+    async_processing=True,
+)
 
-        if st.button(f"Run Denoising on {os.path.basename(input_path)}", key=input_path):
-            if model_choice == "Demucs":
-                out_path = run_demucs(input_path)
-                if out_path:
-                    st.audio(out_path, format='audio/wav')
-                    st.success("✅ Demucs denoising done.")
-            else:
-                out_path, img_path = run_custom_denoiser(input_path)
-                if out_path:
-                    st.audio(out_path, format='audio/wav')
-                    st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
-                    st.success("✅ Custom CNN denoising done.")
+# Optional: Code for file upload and batch processing (if needed)
+uploaded_file = st.file_uploader("Upload Audio File for Denoising", type=["wav", "mp3", "flac"])
 
-# ===== Upload Flow =====
-if option == "Upload Audio":
-    uploaded_files = st.file_uploader("Upload WAV files", type=["wav"], accept_multiple_files=True)
-    if uploaded_files:
-        input_paths = []
-        for file in uploaded_files:
-            file_path = os.path.join("data", "recorded_audio", file.name)
-            with open(file_path, "wb") as f:
-                f.write(file.read())
-            input_paths.append(file_path)
-        process_audio(input_paths)
-
-# ===== Record Audio Flow =====
-elif option == "Record Live Audio":
-    if is_streamlit_cloud:
-        st.warning("🚫 Live recording is only available locally.")
-    else:
-        try:
-            if st.button("Start Recording"):
-                input_path = os.path.join("data", "recorded_audio", "live_record.wav")
-                record_audio(input_path)
-                st.audio(input_path, format='audio/wav')
-                process_audio([input_path])
-        except sd.PortAudioError as e:
-            st.error(f"❌ Microphone error: {str(e)}")
-        except Exception as e:
-            st.error(f"❌ Unexpected error: {str(e)}")
-
-# ===== Feedback Section =====
-st.markdown("---")
-st.subheader("🗣️ Share Your Feedback")
-
-st.markdown("How would you rate the audio quality after denoising?")
-rating = st.radio("Overall audio quality:", ["Excellent", "Good", "Average", "Poor"], key="rating")
-
-comment = st.text_area("💬 Additional Comments", placeholder="Any suggestions or issues you noticed...")
-
-if st.button("Submit Feedback"):
-    feedback = {
-        "timestamp": datetime.datetime.now().isoformat(),
-        "rating": rating,
-        "comment": comment
-    }
-
-    feedback_file = "feedback.csv"
-
-    # Save feedback
-    if not os.path.exists(feedback_file):
-        pd.DataFrame([feedback]).to_csv(feedback_file, index=False)
-    else:
-        pd.DataFrame([feedback]).to_csv(feedback_file, mode='a', header=False, index=False)
-
-    st.success("✅ Thank you for your feedback!")
-
-# Optional: View feedback (for local testing/admin)
-if st.checkbox("📊 View Submitted Feedback (for testing only)"):
-    if os.path.exists("feedback.csv"):
-        st.dataframe(pd.read_csv("feedback.csv"))
-    else:
-        st.write("No feedback submitted yet.")
-
-st.markdown("---")
-st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
+if uploaded_file:
+    # Load audio data from uploaded file
+    audio_data, sr = librosa.load(uploaded_file, sr=None)
+    
+    # Process audio (apply chosen model)
+    if model_selection == 'Custom CNN':
+        denoised_audio = custom_cnn_denoise(audio_data)
+    elif model_selection == 'Demucs':
+        denoised_audio = demucs_denoise(audio_data)
+    
+    # Plot comparison image
+    fig = plot_waveforms(audio_data, denoised_audio)
+    st.pyplot(fig)
+    
+    # Play denoised audio
+    st.audio(denoised_audio, format="audio/wav")
