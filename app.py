@@ -19,9 +19,6 @@ st.subheader("Denoise your recordings with AI!")
 # Choose input method: Upload or Record
 option = st.radio("Choose input method:", ["Upload Audio", "Record Live Audio"])
 
-# Language selection
-language = st.selectbox("Choose language for instructions:", ["English","हिन्दी","मराठी", "Spanish", "French"])
-
 # Model selection (e.g., custom models, demucs, etc.)
 model_choice = st.selectbox("Choose model to apply for denoising:", ["Demucs", "Custom Denoiser"])
 
