@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from denoise_audio import run_custom_denoiser, run_demucs, record_audio
 import time
 import numpy as np
+import datetime
+import pandas as pd
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
@@ -30,6 +32,11 @@ def show_processing_status():
     """Function to show processing feedback."""
     with status_placeholder:
         st.info("🔄 Processing... Please wait while the denoising is happening.")
+
+def hide_processing_status():
+    """Function to hide processing feedback after completion."""
+    with status_placeholder:
+        st.empty()
 
 def plot_waveform(audio_path, title="Waveform"):
     """Plot the waveform of the audio."""
@@ -65,6 +72,7 @@ if option == "Upload Audio":
             # Run chosen model (either Demucs or Custom Denoiser)
             if model_choice == "Demucs":
                 demucs_out = run_demucs(input_path)
+                hide_processing_status()  # Hide processing status
                 st.success("✅ Denoising completed using Demucs!")
                 if demucs_out:
                     st.audio(demucs_out, format='audio/wav')
@@ -75,6 +83,7 @@ if option == "Upload Audio":
 
             elif model_choice == "Custom Denoiser":
                 custom_out, img_path = run_custom_denoiser(input_path)
+                hide_processing_status()  # Hide processing status
                 st.success("✅ Denoising completed using Custom Denoiser!")
                 if custom_out:
                     st.audio(custom_out, format='audio/wav')
@@ -108,6 +117,7 @@ elif option == "Record Live Audio":
         # Run chosen model (either Demucs or Custom Denoiser)
         if model_choice == "Demucs":
             demucs_out = run_demucs(input_path)
+            hide_processing_status()  # Hide processing status
             st.success("✅ Denoising completed using Demucs!")
             if demucs_out:
                 st.audio(demucs_out, format='audio/wav')
@@ -118,6 +128,7 @@ elif option == "Record Live Audio":
 
         elif model_choice == "Custom Denoiser":
             custom_out, img_path = run_custom_denoiser(input_path)
+            hide_processing_status()  # Hide processing status
             st.success("✅ Denoising completed using Custom Denoiser!")
             if custom_out:
                 st.audio(custom_out, format='audio/wav')
@@ -131,6 +142,38 @@ elif option == "Record Live Audio":
 
         time.sleep(1)  # Small delay to allow updates to the UI
 
-# Footer with GitHub link
+# ===== Feedback Section =====
+st.markdown("---")
+st.subheader("🗣️ Share Your Feedback")
+
+st.markdown("How would you rate the audio quality after denoising?")
+rating = st.radio("Overall audio quality:", ["Excellent", "Good", "Average", "Poor"], key="rating")
+
+comment = st.text_area("💬 Additional Comments", placeholder="Any suggestions or issues you noticed...")
+
+if st.button("Submit Feedback"):
+    feedback = {
+        "timestamp": datetime.datetime.now().isoformat(),
+        "rating": rating,
+        "comment": comment
+    }
+
+    feedback_file = "feedback.csv"
+
+    # Save feedback
+    if not os.path.exists(feedback_file):
+        pd.DataFrame([feedback]).to_csv(feedback_file, index=False)
+    else:
+        pd.DataFrame([feedback]).to_csv(feedback_file, mode='a', header=False, index=False)
+
+    st.success("✅ Thank you for your feedback!")
+
+# Optional: View feedback (for local testing/admin)
+if st.checkbox("📊 View Submitted Feedback (for testing only)"):
+    if os.path.exists("feedback.csv"):
+        st.dataframe(pd.read_csv("feedback.csv"))
+    else:
+        st.write("No feedback submitted yet.")
+
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
