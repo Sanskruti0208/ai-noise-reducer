@@ -95,7 +95,8 @@ Replace Denoising_model.pth with your own trained weights if desired
 
 ![image](https://github.com/user-attachments/assets/8a8d5c68-cab1-44e8-a603-907846d5829c)
 
-🌐 Deployment
+🌐 Deployment:
+
 Deploy easily on:
 
 Streamlit Cloud ✅
@@ -106,7 +107,8 @@ Hugging Face Spaces
 
 Heroku (w/ backend support)
 
-📜 License
+📜 License:
+
 MIT License
 Feel free to modify, fork, and use it for non-commercial projects. Contribute back if you enhance it! 🙌
 
