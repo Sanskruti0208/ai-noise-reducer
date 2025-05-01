@@ -11,180 +11,130 @@ import pandas as pd
 import pyaudio
 import wave
 
-# Set up Streamlit page configuration
-st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
+# Ensure required folders exist
+os.makedirs("data/recorded_audio", exist_ok=True)
 
-# Title and Subheader
+# Streamlit page config
+st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
 st.title("🎧 AI Noise Reducer")
 st.subheader("Denoise your recordings with AI!")
 
-# Choose input method: Upload or Record
+# UI controls
 option = st.radio("Choose input method:", ["Upload Audio", "Record Live Audio"])
-
-# Model selection (e.g., custom models, demucs, etc.)
 model_choice = st.selectbox("Choose model to apply for denoising:", ["Demucs", "Custom Denoiser"])
-
-# Processing status display
 status_placeholder = st.empty()
 
+# === Helper Functions ===
+
 def show_processing_status():
-    """Function to show processing feedback."""
     with status_placeholder:
-        st.info("🔄 Processing... Please wait while the denoising is happening.")
+        st.info("🔄 Processing... Please wait.")
 
 def hide_processing_status():
-    """Function to hide processing feedback after completion."""
     with status_placeholder:
         st.empty()
 
 def plot_waveform(audio_path, title="Waveform"):
-    """Plot the waveform of the audio."""
-    y, sr = librosa.load(audio_path, sr=None)  # Load the audio file
-    plt.figure(figsize=(10, 4))
-    librosa.display.waveshow(y, sr=sr, alpha=0.6)
-    plt.title(title)
-    plt.xlabel("Time (s)")
-    plt.ylabel("Amplitude")
-    st.pyplot(plt)
+    try:
+        y, sr = librosa.load(audio_path, sr=None)
+        fig, ax = plt.subplots(figsize=(10, 4))
+        librosa.display.waveshow(y, sr=sr, alpha=0.6, ax=ax)
+        ax.set_title(title)
+        ax.set_xlabel("Time (s)")
+        ax.set_ylabel("Amplitude")
+        st.pyplot(fig)
+    except Exception as e:
+        st.error(f"⚠️ Error plotting waveform: {e}")
 
 def record_audio(input_path, duration=5, fs=44100):
-    """Record live audio and save it as a WAV file using PyAudio."""
-    p = pyaudio.PyAudio()
+    try:
+        p = pyaudio.PyAudio()
+        stream = p.open(format=pyaudio.paInt16,
+                        channels=1,
+                        rate=fs,
+                        input=True,
+                        frames_per_buffer=1024)
+        frames = []
+        st.write(f"🎙️ Recording for {duration} seconds...")
+        for _ in range(0, int(fs / 1024 * duration)):
+            frames.append(stream.read(1024))
+        stream.stop_stream()
+        stream.close()
+        p.terminate()
 
-    # Open the audio stream
-    stream = p.open(format=pyaudio.paInt16,
-                    channels=1,
-                    rate=fs,
-                    input=True,
-                    frames_per_buffer=1024)
-    
-    frames = []
+        with wave.open(input_path, 'wb') as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+            wf.setframerate(fs)
+            wf.writeframes(b''.join(frames))
 
-    st.write(f"Recording for {duration} seconds...")
+        st.success("🎉 Recording finished!")
 
-    # Record the audio
-    for _ in range(0, int(fs / 1024 * duration)):
-        data = stream.read(1024)
-        frames.append(data)
+    except Exception as e:
+        st.error(f"⚠️ Error during recording: {e}")
 
-    # Stop and close the stream
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
+# === Main Logic ===
 
-    # Save the recorded audio to a file
-    with wave.open(input_path, 'wb') as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-        wf.setframerate(fs)
-        wf.writeframes(b''.join(frames))
+def process_audio(input_path):
+    show_processing_status()
+    try:
+        if model_choice == "Demucs":
+            output = run_demucs(input_path)
+            if output:
+                st.audio(output, format='audio/wav')
+                st.subheader("📊 Denoised Waveform (Demucs)")
+                plot_waveform(output)
+                st.success("✅ Denoising complete with Demucs!")
+            else:
+                st.error("❌ Demucs failed.")
 
-    st.write("Recording finished.")
+        elif model_choice == "Custom Denoiser":
+            output, img_path = run_custom_denoiser(input_path)
+            if output:
+                st.audio(output, format='audio/wav')
+                st.subheader("📊 Denoised Waveform (Custom)")
+                plot_waveform(output)
+                st.image(img_path, caption="Comparison: Noisy vs Denoised", use_column_width=True)
+                st.success("✅ Denoising complete with Custom Denoiser!")
+            else:
+                st.error("❌ Custom Denoiser failed.")
+    except Exception as e:
+        st.error(f"❌ Processing error: {e}")
+    finally:
+        hide_processing_status()
+        time.sleep(1)
 
-# Handle the "Upload Audio" option
+# === Upload Audio ===
+
 if option == "Upload Audio":
-    uploaded_file = st.file_uploader("Upload your noisy audio (WAV)", type=["wav"])
-    
+    uploaded_file = st.file_uploader("Upload a WAV file:", type=["wav"])
     if uploaded_file:
-        # Save the uploaded audio file
         input_path = os.path.join("data", "recorded_audio", uploaded_file.name)
         with open(input_path, "wb") as f:
             f.write(uploaded_file.read())
-        
-        # Show uploaded audio preview
         st.audio(input_path, format='audio/wav')
-
-        # Plot waveform of the original noisy audio
-        st.subheader("Original Audio Waveform")
-        plot_waveform(input_path, title="Original Noisy Audio")
-
-        # Start Denoising when the button is clicked
+        st.subheader("📈 Original Audio Waveform")
+        plot_waveform(input_path)
         if st.button("Run Denoising"):
-            show_processing_status()  # Show processing status
+            process_audio(input_path)
 
-            try:
-                # Run chosen model (either Demucs or Custom Denoiser)
-                if model_choice == "Demucs":
-                    demucs_out = run_demucs(input_path)
-                    if demucs_out:
-                        st.audio(demucs_out, format='audio/wav')
-                        st.subheader("Denoised Audio Waveform (Demucs)")
-                        plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
-                        st.success("✅ Denoising completed using Demucs!")
-                    else:
-                        st.error("❌ Demucs denoising failed!")
+# === Record Live Audio ===
 
-                elif model_choice == "Custom Denoiser":
-                    custom_out, img_path = run_custom_denoiser(input_path)
-                    if custom_out:
-                        st.audio(custom_out, format='audio/wav')
-                        st.subheader("Denoised Audio Waveform (Custom Denoiser)")
-                        plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
-                        st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
-                        st.success("✅ Denoising completed using Custom Denoiser!")
-                    else:
-                        st.error("❌ Custom Denoiser failed!")
-
-            except Exception as e:
-                st.error(f"❌ An error occurred during processing: {e}")
-
-            hide_processing_status()  # Hide processing status
-            time.sleep(1)  # Small delay to allow updates to the UI
-
-# Handle the "Record Live Audio" option
 elif option == "Record Live Audio":
     if st.button("Start Recording"):
-        # Record live audio and save
         input_path = os.path.join("data", "recorded_audio", "live_record.wav")
         record_audio(input_path)
-        
-        # Show recording audio preview
         st.audio(input_path, format='audio/wav')
-        
-        # Plot waveform of the recorded live audio
-        st.subheader("Recorded Live Audio Waveform")
-        plot_waveform(input_path, title="Recorded Live Audio")
+        st.subheader("📈 Recorded Audio Waveform")
+        plot_waveform(input_path)
+        process_audio(input_path)
 
-        # Show processing status
-        show_processing_status()
-        
-        try:
-            # Run chosen model (either Demucs or Custom Denoiser)
-            if model_choice == "Demucs":
-                demucs_out = run_demucs(input_path)
-                if demucs_out:
-                    st.audio(demucs_out, format='audio/wav')
-                    st.subheader("Denoised Audio Waveform (Demucs)")
-                    plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
-                    st.success("✅ Denoising completed using Demucs!")
-                else:
-                    st.error("❌ Demucs denoising failed!")
+# === Feedback Section ===
 
-            elif model_choice == "Custom Denoiser":
-                custom_out, img_path = run_custom_denoiser(input_path)
-                if custom_out:
-                    st.audio(custom_out, format='audio/wav')
-                    st.subheader("Denoised Audio Waveform (Custom Denoiser)")
-                    plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
-                    st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
-                    st.success("✅ Denoising completed using Custom Denoiser!")
-                else:
-                    st.error("❌ Custom Denoiser failed!")
-
-        except Exception as e:
-            st.error(f"❌ An error occurred during processing: {e}")
-
-        hide_processing_status()  # Hide processing status
-        time.sleep(1)  # Small delay to allow updates to the UI
-
-# ===== Feedback Section =====
 st.markdown("---")
 st.subheader("🗣️ Share Your Feedback")
-
-st.markdown("How would you rate the audio quality after denoising?")
-rating = st.radio("Overall audio quality:", ["Excellent", "Good", "Average", "Poor"], key="rating")
-
-comment = st.text_area("💬 Additional Comments", placeholder="Any suggestions or issues you noticed...")
+rating = st.radio("Rate the denoised audio:", ["Excellent", "Good", "Average", "Poor"])
+comment = st.text_area("💬 Additional Comments", placeholder="Your suggestions or issues...")
 
 if st.button("Submit Feedback"):
     feedback = {
@@ -192,24 +142,17 @@ if st.button("Submit Feedback"):
         "rating": rating,
         "comment": comment
     }
-
     feedback_file = "feedback.csv"
-
-    # Save feedback
     if not os.path.exists(feedback_file):
         pd.DataFrame([feedback]).to_csv(feedback_file, index=False)
     else:
         pd.DataFrame([feedback]).to_csv(feedback_file, mode='a', header=False, index=False)
-
     st.success("✅ Thank you for your feedback!")
 
-# Optional: View feedback (for local testing/admin)
-if st.checkbox("📊 View Submitted Feedback (for testing only)"):
-
+# Optional: Developer feedback viewer (can be removed in production)
+if st.checkbox("📊 View Feedback Data (Admin Only)"):
     if os.path.exists("feedback.csv"):
-        st.dataframe(pd.read_csv("feedback.csv"))
+        df = pd.read_csv("feedback.csv")
+        st.dataframe(df)
     else:
-        st.write("No feedback submitted yet.")
-
-st.markdown("---")
-st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
+        st.info("No feedback yet.")
