@@ -1,104 +1,136 @@
 import streamlit as st
-import numpy as np
-import torch
+import os
 import librosa
+import librosa.display
 import matplotlib.pyplot as plt
-from io import BytesIO
-from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
-import av
-import soundfile as sf  # To save audio to a buffer
+from denoise_audio import run_custom_denoiser, run_demucs, record_audio
+import time
+import numpy as np
 
-# Dummy functions for the denoising models (replace these with actual denoising methods)
-def custom_cnn_denoise(audio_data):
-    # Your Custom CNN denoising logic here
-    return audio_data * 0.8  # Dummy denoising logic
+# Set up Streamlit page configuration
+st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
 
-def demucs_denoise(audio_data):
-    # Your Demucs denoising logic here
-    return audio_data * 0.9  # Dummy denoising logic
+# Title and Subheader
+st.title("🎧 AI Noise Reducer")
+st.subheader("Denoise your recordings with AI!")
 
-# Function to plot waveforms or spectrograms
-def plot_waveforms(original, denoised):
-    fig, axes = plt.subplots(2, 1, figsize=(10, 6))
-    # Original waveform
-    axes[0].plot(original)
-    axes[0].set_title("Original Audio")
-    axes[0].set_xlabel("Samples")
-    axes[0].set_ylabel("Amplitude")
-    # Denoised waveform
-    axes[1].plot(denoised)
-    axes[1].set_title("Denoised Audio")
-    axes[1].set_xlabel("Samples")
-    axes[1].set_ylabel("Amplitude")
-    
-    return fig
-
-# Function to convert audio array to wav in BytesIO
-def audio_to_bytes(audio_data, sr):
-    buf = BytesIO()
-    sf.write(buf, audio_data, sr, format='WAV')
-    buf.seek(0)
-    return buf
-
-# Real-time audio processor for Streamlit WebRTC
-class AudioProcessor(AudioProcessorBase):
-    def recv(self, frame: av.AudioFrame) -> av.AudioFrame:
-        audio = frame.to_ndarray()
-        
-        # Perform denoising (example: choose model based on selection)
-        if model_selection == 'Custom CNN':
-            denoised_audio = custom_cnn_denoise(audio)
-        elif model_selection == 'Demucs':
-            denoised_audio = demucs_denoise(audio)
-        
-        # Plot comparison (if the selected model is Custom CNN or Demucs)
-        fig = plot_waveforms(audio, denoised_audio)
-        st.pyplot(fig)
-        
-        # Convert denoised audio to bytes and display as audio player
-        audio_bytes = audio_to_bytes(denoised_audio, sr=16000)  # Use the appropriate sample rate
-        st.audio(audio_bytes, format="audio/wav")
-        
-        return frame
-
-# Streamlit UI
-st.title("🎧 Audio Denoising App")
-st.markdown("Choose a denoising model and either record some audio or upload noisy audio to denoise.")
+# Choose input method: Upload or Record
+option = st.radio("Choose input method:", ["Upload Audio", "Record Live Audio"])
 
 # Language selection
-language = st.selectbox("🌐 Select Language", ["English", "हिन्दी", "Español", "Français", "मराठी"], index=0)
+language = st.selectbox("Choose language for instructions:", ["English", "Spanish", "French"])
 
-# Model selection
-model_selection = st.selectbox("Choose Denoising Model", ["Custom CNN", "Demucs"], index=0)
+# Model selection (e.g., custom models, demucs, etc.)
+model_choice = st.selectbox("Choose model to apply for denoising:", ["Demucs", "Custom Denoiser"])
 
-# Streamlit WebRTC for real-time audio recording
-webrtc_streamer(
-    key="audio",
-    mode=WebRtcMode.SENDRECV,
-    audio_processor_factory=AudioProcessor,
-    media_stream_constraints={"audio": True, "video": False},
-    async_processing=True,
-)
+# Processing status display
+status_placeholder = st.empty()
 
-# Optional: Code for file upload and batch processing (if needed)
-uploaded_file = st.file_uploader("Upload Audio File for Denoising", type=["wav", "mp3", "flac"])
+def show_processing_status():
+    """Function to show processing feedback."""
+    with status_placeholder:
+        st.info("🔄 Processing... Please wait while the denoising is happening.")
 
-if uploaded_file:
-    # Show loading spinner while processing
-    with st.spinner("Denoising audio..."):
-        # Load audio data from uploaded file
-        audio_data, sr = librosa.load(uploaded_file, sr=None)
+def plot_waveform(audio_path, title="Waveform"):
+    """Plot the waveform of the audio."""
+    y, sr = librosa.load(audio_path, sr=None)  # Load the audio file
+    plt.figure(figsize=(10, 4))
+    librosa.display.waveshow(y, sr=sr, alpha=0.6)
+    plt.title(title)
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude")
+    st.pyplot(plt)
+
+# Handle the "Upload Audio" option
+if option == "Upload Audio":
+    uploaded_file = st.file_uploader("Upload your noisy audio (WAV)", type=["wav"])
+    
+    if uploaded_file:
+        # Save the uploaded audio file
+        input_path = os.path.join("data", "recorded_audio", uploaded_file.name)
+        with open(input_path, "wb") as f:
+            f.write(uploaded_file.read())
         
-        # Process audio (apply chosen model)
-        if model_selection == 'Custom CNN':
-            denoised_audio = custom_cnn_denoise(audio_data)
-        elif model_selection == 'Demucs':
-            denoised_audio = demucs_denoise(audio_data)
+        # Show uploaded audio preview
+        st.audio(input_path, format='audio/wav')
+
+        # Plot waveform of the original noisy audio
+        st.subheader("Original Audio Waveform")
+        plot_waveform(input_path, title="Original Noisy Audio")
+
+        # Start Denoising when the button is clicked
+        if st.button("Run Denoising"):
+            show_processing_status()  # Show processing status
+
+            # Run chosen model (either Demucs or Custom Denoiser)
+            if model_choice == "Demucs":
+                demucs_out = run_demucs(input_path)
+                st.success("✅ Denoising completed using Demucs!")
+                if demucs_out:
+                    st.audio(demucs_out, format='audio/wav')
+
+                    # Plot waveform of the denoised audio
+                    st.subheader("Denoised Audio Waveform (Demucs)")
+                    plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
+
+            elif model_choice == "Custom Denoiser":
+                custom_out, img_path = run_custom_denoiser(input_path)
+                st.success("✅ Denoising completed using Custom Denoiser!")
+                if custom_out:
+                    st.audio(custom_out, format='audio/wav')
+
+                    # Plot waveform of the denoised audio
+                    st.subheader("Denoised Audio Waveform (Custom Denoiser)")
+                    plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
+                    
+                    # Display comparison image
+                    st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
+
+            time.sleep(1)  # Small delay to allow updates to the UI
+
+# Handle the "Record Live Audio" option
+elif option == "Record Live Audio":
+    if st.button("Start Recording"):
+        # Record live audio and save
+        input_path = os.path.join("data", "recorded_audio", "live_record.wav")
+        record_audio(input_path)
         
-        # Plot comparison image
-        fig = plot_waveforms(audio_data, denoised_audio)
-        st.pyplot(fig)
+        # Show recording audio preview
+        st.audio(input_path, format='audio/wav')
         
-        # Convert denoised audio to bytes and display as audio player
-        audio_bytes = audio_to_bytes(denoised_audio, sr)
-        st.audio(audio_bytes, format="audio/wav")
+        # Plot waveform of the recorded live audio
+        st.subheader("Recorded Live Audio Waveform")
+        plot_waveform(input_path, title="Recorded Live Audio")
+
+        # Show processing status
+        show_processing_status()
+        
+        # Run chosen model (either Demucs or Custom Denoiser)
+        if model_choice == "Demucs":
+            demucs_out = run_demucs(input_path)
+            st.success("✅ Denoising completed using Demucs!")
+            if demucs_out:
+                st.audio(demucs_out, format='audio/wav')
+
+                # Plot waveform of the denoised audio
+                st.subheader("Denoised Audio Waveform (Demucs)")
+                plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
+
+        elif model_choice == "Custom Denoiser":
+            custom_out, img_path = run_custom_denoiser(input_path)
+            st.success("✅ Denoising completed using Custom Denoiser!")
+            if custom_out:
+                st.audio(custom_out, format='audio/wav')
+                
+                # Plot waveform of the denoised audio
+                st.subheader("Denoised Audio Waveform (Custom Denoiser)")
+                plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
+                
+                # Display comparison image
+                st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
+
+        time.sleep(1)  # Small delay to allow updates to the UI
+
+# Footer with GitHub link
+st.markdown("---")
+st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
