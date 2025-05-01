@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
 import av
+import soundfile as sf  # To save audio to a buffer
 
 # Dummy functions for the denoising models (replace these with actual denoising methods)
 def custom_cnn_denoise(audio_data):
@@ -32,6 +33,13 @@ def plot_waveforms(original, denoised):
     
     return fig
 
+# Function to convert audio array to wav in BytesIO
+def audio_to_bytes(audio_data, sr):
+    buf = BytesIO()
+    sf.write(buf, audio_data, sr, format='WAV')
+    buf.seek(0)
+    return buf
+
 # Real-time audio processor for Streamlit WebRTC
 class AudioProcessor(AudioProcessorBase):
     def recv(self, frame: av.AudioFrame) -> av.AudioFrame:
@@ -47,7 +55,9 @@ class AudioProcessor(AudioProcessorBase):
         fig = plot_waveforms(audio, denoised_audio)
         st.pyplot(fig)
         
-        st.audio(denoised_audio, format="audio/wav")
+        # Convert denoised audio to bytes and display as audio player
+        audio_bytes = audio_to_bytes(denoised_audio, sr=16000)  # Use the appropriate sample rate
+        st.audio(audio_bytes, format="audio/wav")
         
         return frame
 
@@ -59,7 +69,7 @@ st.markdown("Choose a denoising model and either record some audio or upload noi
 language = st.selectbox("🌐 Select Language", ["English", "हिन्दी", "Español", "Français", "मराठी"], index=0)
 
 # Model selection
-model_selection = st.selectbox("Choose Denoising Model", ["Custom CNN", "Demucs" ], index=0)
+model_selection = st.selectbox("Choose Denoising Model", ["Custom CNN", "Demucs"], index=0)
 
 # Streamlit WebRTC for real-time audio recording
 webrtc_streamer(
@@ -87,5 +97,6 @@ if uploaded_file:
     fig = plot_waveforms(audio_data, denoised_audio)
     st.pyplot(fig)
     
-    # Play denoised audio
-    st.audio(denoised_audio, format="audio/wav")
+    # Convert denoised audio to bytes and display as audio player
+    audio_bytes = audio_to_bytes(denoised_audio, sr)
+    st.audio(audio_bytes, format="audio/wav")
