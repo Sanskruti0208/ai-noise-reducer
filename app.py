@@ -66,32 +66,33 @@ if option == "Upload Audio":
         if st.button("Run Denoising"):
             show_processing_status()  # Show processing status
 
-            # Run chosen model (either Demucs or Custom Denoiser)
-            if model_choice == "Demucs":
-                demucs_out = run_demucs(input_path)
-                hide_processing_status()  # Hide processing status
-                st.success("✅ Denoising completed using Demucs!")
-                if demucs_out:
-                    st.audio(demucs_out, format='audio/wav')
+            try:
+                # Run chosen model (either Demucs or Custom Denoiser)
+                if model_choice == "Demucs":
+                    demucs_out = run_demucs(input_path)
+                    if demucs_out:
+                        st.audio(demucs_out, format='audio/wav')
+                        st.subheader("Denoised Audio Waveform (Demucs)")
+                        plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
+                        st.success("✅ Denoising completed using Demucs!")
+                    else:
+                        st.error("❌ Demucs denoising failed!")
 
-                    # Plot waveform of the denoised audio
-                    st.subheader("Denoised Audio Waveform (Demucs)")
-                    plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
+                elif model_choice == "Custom Denoiser":
+                    custom_out, img_path = run_custom_denoiser(input_path)
+                    if custom_out:
+                        st.audio(custom_out, format='audio/wav')
+                        st.subheader("Denoised Audio Waveform (Custom Denoiser)")
+                        plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
+                        st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
+                        st.success("✅ Denoising completed using Custom Denoiser!")
+                    else:
+                        st.error("❌ Custom Denoiser failed!")
 
-            elif model_choice == "Custom Denoiser":
-                custom_out, img_path = run_custom_denoiser(input_path)
-                hide_processing_status()  # Hide processing status
-                st.success("✅ Denoising completed using Custom Denoiser!")
-                if custom_out:
-                    st.audio(custom_out, format='audio/wav')
+            except Exception as e:
+                st.error(f"❌ An error occurred during processing: {e}")
 
-                    # Plot waveform of the denoised audio
-                    st.subheader("Denoised Audio Waveform (Custom Denoiser)")
-                    plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
-                    
-                    # Display comparison image
-                    st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
-
+            hide_processing_status()  # Hide processing status
             time.sleep(1)  # Small delay to allow updates to the UI
 
 # Handle the "Record Live Audio" option
@@ -111,32 +112,33 @@ elif option == "Record Live Audio":
         # Show processing status
         show_processing_status()
         
-        # Run chosen model (either Demucs or Custom Denoiser)
-        if model_choice == "Demucs":
-            demucs_out = run_demucs(input_path)
-            hide_processing_status()  # Hide processing status
-            st.success("✅ Denoising completed using Demucs!")
-            if demucs_out:
-                st.audio(demucs_out, format='audio/wav')
+        try:
+            # Run chosen model (either Demucs or Custom Denoiser)
+            if model_choice == "Demucs":
+                demucs_out = run_demucs(input_path)
+                if demucs_out:
+                    st.audio(demucs_out, format='audio/wav')
+                    st.subheader("Denoised Audio Waveform (Demucs)")
+                    plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
+                    st.success("✅ Denoising completed using Demucs!")
+                else:
+                    st.error("❌ Demucs denoising failed!")
 
-                # Plot waveform of the denoised audio
-                st.subheader("Denoised Audio Waveform (Demucs)")
-                plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
+            elif model_choice == "Custom Denoiser":
+                custom_out, img_path = run_custom_denoiser(input_path)
+                if custom_out:
+                    st.audio(custom_out, format='audio/wav')
+                    st.subheader("Denoised Audio Waveform (Custom Denoiser)")
+                    plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
+                    st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
+                    st.success("✅ Denoising completed using Custom Denoiser!")
+                else:
+                    st.error("❌ Custom Denoiser failed!")
 
-        elif model_choice == "Custom Denoiser":
-            custom_out, img_path = run_custom_denoiser(input_path)
-            hide_processing_status()  # Hide processing status
-            st.success("✅ Denoising completed using Custom Denoiser!")
-            if custom_out:
-                st.audio(custom_out, format='audio/wav')
-                
-                # Plot waveform of the denoised audio
-                st.subheader("Denoised Audio Waveform (Custom Denoiser)")
-                plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
-                
-                # Display comparison image
-                st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
+        except Exception as e:
+            st.error(f"❌ An error occurred during processing: {e}")
 
+        hide_processing_status()  # Hide processing status
         time.sleep(1)  # Small delay to allow updates to the UI
 
 # ===== Feedback Section =====
