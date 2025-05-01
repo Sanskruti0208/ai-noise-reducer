@@ -1,3 +1,4 @@
+pyaudio
 demucs==4.0.0
 librosa==0.10.0
 aioice==0.10.1
