@@ -1,8 +1,9 @@
 demucs
+librosa==0.10.0
 aioice==0.10.1
 aiortc==1.10.1
 altair==5.5.0
-attrs==25.3.0
+attrs==23.2.0
 av==10.0.0
 blinker==1.6.2
 cachetools==5.5.2
