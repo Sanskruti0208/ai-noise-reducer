@@ -3,11 +3,13 @@ import os
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
-from denoise_audio import run_custom_denoiser, run_demucs, record_audio
+from denoise_audio import run_custom_denoiser, run_demucs
 import time
 import numpy as np
 import datetime
 import pandas as pd
+import pyaudio
+import wave
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
@@ -44,6 +46,40 @@ def plot_waveform(audio_path, title="Waveform"):
     plt.xlabel("Time (s)")
     plt.ylabel("Amplitude")
     st.pyplot(plt)
+
+def record_audio(input_path, duration=5, fs=44100):
+    """Record live audio and save it as a WAV file using PyAudio."""
+    p = pyaudio.PyAudio()
+
+    # Open the audio stream
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=1,
+                    rate=fs,
+                    input=True,
+                    frames_per_buffer=1024)
+    
+    frames = []
+
+    st.write(f"Recording for {duration} seconds...")
+
+    # Record the audio
+    for _ in range(0, int(fs / 1024 * duration)):
+        data = stream.read(1024)
+        frames.append(data)
+
+    # Stop and close the stream
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+    # Save the recorded audio to a file
+    with wave.open(input_path, 'wb') as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+        wf.setframerate(fs)
+        wf.writeframes(b''.join(frames))
+
+    st.write("Recording finished.")
 
 # Handle the "Upload Audio" option
 if option == "Upload Audio":
@@ -169,6 +205,7 @@ if st.button("Submit Feedback"):
 
 # Optional: View feedback (for local testing/admin)
 if st.checkbox("📊 View Submitted Feedback (for testing only)"):
+
     if os.path.exists("feedback.csv"):
         st.dataframe(pd.read_csv("feedback.csv"))
     else:
