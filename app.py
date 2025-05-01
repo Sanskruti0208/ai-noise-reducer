@@ -84,19 +84,21 @@ webrtc_streamer(
 uploaded_file = st.file_uploader("Upload Audio File for Denoising", type=["wav", "mp3", "flac"])
 
 if uploaded_file:
-    # Load audio data from uploaded file
-    audio_data, sr = librosa.load(uploaded_file, sr=None)
-    
-    # Process audio (apply chosen model)
-    if model_selection == 'Custom CNN':
-        denoised_audio = custom_cnn_denoise(audio_data)
-    elif model_selection == 'Demucs':
-        denoised_audio = demucs_denoise(audio_data)
-    
-    # Plot comparison image
-    fig = plot_waveforms(audio_data, denoised_audio)
-    st.pyplot(fig)
-    
-    # Convert denoised audio to bytes and display as audio player
-    audio_bytes = audio_to_bytes(denoised_audio, sr)
-    st.audio(audio_bytes, format="audio/wav")
+    # Show loading spinner while processing
+    with st.spinner("Denoising audio..."):
+        # Load audio data from uploaded file
+        audio_data, sr = librosa.load(uploaded_file, sr=None)
+        
+        # Process audio (apply chosen model)
+        if model_selection == 'Custom CNN':
+            denoised_audio = custom_cnn_denoise(audio_data)
+        elif model_selection == 'Demucs':
+            denoised_audio = demucs_denoise(audio_data)
+        
+        # Plot comparison image
+        fig = plot_waveforms(audio_data, denoised_audio)
+        st.pyplot(fig)
+        
+        # Convert denoised audio to bytes and display as audio player
+        audio_bytes = audio_to_bytes(denoised_audio, sr)
+        st.audio(audio_bytes, format="audio/wav")
