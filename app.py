@@ -103,48 +103,11 @@ if option == selected_text["upload_audio"]:
 
 # Handle the "Record Live Audio" option
 elif option == selected_text["record_audio"]:
-    if st.button("Start Recording"):
-        # Record live audio and save
-        input_path = os.path.join("data", "recorded_audio", "live_record.wav")
-        record_audio(input_path)
+    # Show warning if audio recording is not supported
+    st.warning("Audio recording is not supported in this environment. Please upload an audio file instead.")
 
-        # Show recording audio preview
-        st.audio(input_path, format='audio/wav')
-
-        # Plot waveform of the recorded live audio
-        st.subheader("Recorded Live Audio Waveform")
-        plot_waveform(input_path, title="Recorded Live Audio")
-
-        # Show processing status
-        show_processing_status()
-
-        # Run chosen model (either Demucs or Custom Denoiser)
-        if model_choice == "Demucs":
-            demucs_out = run_demucs(input_path)
-            hide_processing_status()  # Hide processing status
-            st.success(selected_text["denoising_complete"].format(model="Demucs"))
-            if demucs_out:
-                st.audio(demucs_out, format='audio/wav')
-
-                # Plot waveform of the denoised audio
-                st.subheader("Denoised Audio Waveform (Demucs)")
-                plot_waveform(demucs_out, title="Denoised Audio (Demucs)")
-
-        elif model_choice == "Custom Denoiser":
-            custom_out, img_path = run_custom_denoiser(input_path)
-            hide_processing_status()  # Hide processing status
-            st.success(selected_text["denoising_complete"].format(model="Custom Denoiser"))
-            if custom_out:
-                st.audio(custom_out, format='audio/wav')
-
-                # Plot waveform of the denoised audio
-                st.subheader("Denoised Audio Waveform (Custom Denoiser)")
-                plot_waveform(custom_out, title="Denoised Audio (Custom Denoiser)")
-
-                # Display comparison image
-                st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
-
-        time.sleep(1)  # Small delay to allow updates to the UI
+    # If you still want to proceed with a disabled button, you could add this:
+    # st.button("Recording Disabled", disabled=True)
 
 # ===== Feedback Section =====
 st.markdown("---")
