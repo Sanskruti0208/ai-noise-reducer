@@ -8,8 +8,10 @@ import time
 import numpy as np
 import datetime
 import pandas as pd
-import pyaudio
-import wave
+from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, ClientSettings
+import av
+import queue
+import soundfile as sf
 
 # Ensure required folders exist
 os.makedirs("data/recorded_audio", exist_ok=True)
@@ -45,35 +47,6 @@ def plot_waveform(audio_path, title="Waveform"):
         st.pyplot(fig)
     except Exception as e:
         st.error(f"⚠️ Error plotting waveform: {e}")
-
-def record_audio(input_path, duration=5, fs=44100):
-    try:
-        p = pyaudio.PyAudio()
-        stream = p.open(format=pyaudio.paInt16,
-                        channels=1,
-                        rate=fs,
-                        input=True,
-                        frames_per_buffer=1024)
-        frames = []
-        st.write(f"🎙️ Recording for {duration} seconds...")
-        for _ in range(0, int(fs / 1024 * duration)):
-            frames.append(stream.read(1024))
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
-
-        with wave.open(input_path, 'wb') as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-            wf.setframerate(fs)
-            wf.writeframes(b''.join(frames))
-
-        st.success("🎉 Recording finished!")
-
-    except Exception as e:
-        st.error(f"⚠️ Error during recording: {e}")
-
-# === Main Logic ===
 
 def process_audio(input_path):
     show_processing_status()
@@ -118,16 +91,49 @@ if option == "Upload Audio":
         if st.button("Run Denoising"):
             process_audio(input_path)
 
-# === Record Live Audio ===
+# === Record Live Audio with WebRTC ===
 
-elif option == "Record Live Audio":
-    if st.button("Start Recording"):
-        input_path = os.path.join("data", "recorded_audio", "live_record.wav")
-        record_audio(input_path)
-        st.audio(input_path, format='audio/wav')
-        st.subheader("📈 Recorded Audio Waveform")
-        plot_waveform(input_path)
-        process_audio(input_path)
+class AudioRecorder(AudioProcessorBase):
+    def __init__(self) -> None:
+        self.audio_buffer = queue.Queue()
+
+    def recv(self, frame: av.AudioFrame) -> av.AudioFrame:
+        audio = frame.to_ndarray().flatten()
+        self.audio_buffer.put(audio)
+        return frame
+
+if option == "Record Live Audio":
+    audio_recorder = AudioRecorder()
+
+    webrtc_ctx = webrtc_streamer(
+        key="audio",
+        mode="sendonly",
+        in_audio_enabled=True,
+        client_settings=ClientSettings(
+            media_stream_constraints={"video": False, "audio": True}
+        ),
+        audio_processor_factory=lambda: audio_recorder,
+        async_processing=True,
+    )
+
+    if st.button("Save Recording"):
+        if webrtc_ctx.state.playing:
+            st.warning("🎙️ Capturing... please wait 5 seconds.")
+            time.sleep(5)
+
+            audio_data = []
+            while not audio_recorder.audio_buffer.empty():
+                audio_data.extend(audio_recorder.audio_buffer.get())
+
+            input_path = os.path.join("data", "recorded_audio", "live_record.wav")
+            sf.write(input_path, np.array(audio_data), samplerate=48000)
+            st.success("✅ Recording saved!")
+            st.audio(input_path, format='audio/wav')
+            st.subheader("📈 Recorded Audio Waveform")
+            plot_waveform(input_path)
+            process_audio(input_path)
+        else:
+            st.error("❌ Start the recording first!")
 
 # === Feedback Section ===
 
@@ -149,7 +155,7 @@ if st.button("Submit Feedback"):
         pd.DataFrame([feedback]).to_csv(feedback_file, mode='a', header=False, index=False)
     st.success("✅ Thank you for your feedback!")
 
-# Optional: Developer feedback viewer (can be removed in production)
+# Optional: Developer feedback viewer
 if st.checkbox("📊 View Feedback Data (Admin Only)"):
     if os.path.exists("feedback.csv"):
         df = pd.read_csv("feedback.csv")
