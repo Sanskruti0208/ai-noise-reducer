@@ -148,6 +148,37 @@ elif option == selected_text["record_audio"]:
 
 # ===== Feedback Section =====
 st.markdown("---")
-st.subheader(selected_text["feedback_section"])
+st.subheader("🗣️ Share Your Feedback")
 
-st.markdown(selected_text["rate_quality"])
+st.markdown("How would you rate the audio quality after denoising?")
+rating = st.radio("Overall audio quality:", ["Excellent", "Good", "Average", "Poor"], key="rating")
+
+comment = st.text_area("💬 Additional Comments", placeholder="Any suggestions or issues you noticed...")
+
+if st.button("Submit Feedback"):
+    feedback = {
+        "timestamp": datetime.datetime.now().isoformat(),
+        "rating": rating,
+        "comment": comment
+    }
+
+    feedback_file = "feedback.csv"
+
+    # Save feedback
+    if not os.path.exists(feedback_file):
+        pd.DataFrame([feedback]).to_csv(feedback_file, index=False)
+    else:
+        pd.DataFrame([feedback]).to_csv(feedback_file, mode='a', header=False, index=False)
+
+    st.success("✅ Thank you for your feedback!")
+
+# Optional: View feedback (for local testing/admin)
+if st.checkbox("📊 View Submitted Feedback (for testing only)"):
+
+    if os.path.exists("feedback.csv"):
+        st.dataframe(pd.read_csv("feedback.csv"))
+    else:
+        st.write("No feedback submitted yet.")
+
+st.markdown("---")
+st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
