@@ -3,7 +3,6 @@ import os
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
-from denoise_audio import run_custom_denoiser, run_demucs
 import time
 import numpy as np
 import datetime
@@ -12,6 +11,7 @@ from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, ClientSettings
 import av
 import queue
 import soundfile as sf
+from denoise_audio import run_custom_denoiser, run_demucs
 
 # Ensure required folders exist
 os.makedirs("data/recorded_audio", exist_ok=True)
@@ -125,13 +125,16 @@ if option == "Record Live Audio":
             while not audio_recorder.audio_buffer.empty():
                 audio_data.extend(audio_recorder.audio_buffer.get())
 
-            input_path = os.path.join("data", "recorded_audio", "live_record.wav")
-            sf.write(input_path, np.array(audio_data), samplerate=48000)
-            st.success("✅ Recording saved!")
-            st.audio(input_path, format='audio/wav')
-            st.subheader("📈 Recorded Audio Waveform")
-            plot_waveform(input_path)
-            process_audio(input_path)
+            if audio_data:
+                input_path = os.path.join("data", "recorded_audio", "live_record.wav")
+                sf.write(input_path, np.array(audio_data), samplerate=48000)
+                st.success("✅ Recording saved!")
+                st.audio(input_path, format='audio/wav')
+                st.subheader("📈 Recorded Audio Waveform")
+                plot_waveform(input_path)
+                process_audio(input_path)
+            else:
+                st.error("❌ No audio data recorded.")
         else:
             st.error("❌ Start the recording first!")
 
