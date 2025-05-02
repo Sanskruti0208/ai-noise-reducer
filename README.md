@@ -7,13 +7,30 @@ Denoise your recorded or uploaded audio files in just a click with an elegant St
 
 ## 🔥 Features
 
-- 🎙️ Record live audio or upload `.wav` files
-- 🎛️ Choose between:
-  - `Demucs` (Facebook AI Research)
-  - Custom trained `CNN` model
-- 📊 Visual comparison of waveform before/after denoising
-- 🌐 Streamlit-based UI ready for deployment
-- 📁 Automatically saves outputs (audio + images)
+🎙️ Live Audio Recording or Upload .wav Files
+Record audio directly in-browser or upload your own recordings.
+
+🧠 Choose Denoising Model
+Select between:
+
+Demucs (Facebook AI Research)
+
+Custom-trained CNN model
+
+🌐 Streamlit-Based Interactive UI
+Clean, responsive interface built with Streamlit – ready for deployment.
+
+🌍 Multilingual Instructions
+Users can choose their preferred language for instructions and feedback.
+
+📊 Waveform Visualization and Comparison
+Side-by-side before/after waveform plots using librosa and matplotlib.
+
+💾 Automatic Saving of Outputs
+Denoised audio and waveform images are automatically saved.
+
+📣 User Feedback Support
+Collect feedback directly through the interface for continuous improvement.
 
 ---
 
