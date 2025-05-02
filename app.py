@@ -151,6 +151,3 @@ st.markdown("---")
 st.subheader(selected_text["feedback_section"])
 
 st.markdown(selected_text["rate_quality"])
-
-
-# Optionally you can add more languages if needed following the same pattern.
