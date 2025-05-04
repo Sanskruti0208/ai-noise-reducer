@@ -85,8 +85,26 @@ if option == selected_text["upload_audio"]:
 
 # Record Audio (Client-Side)
 elif option == selected_text["record_audio"]:
-    st.markdown("🎙️ Use the button below to record audio. After stopping, download and upload it using the 'Upload Audio' option.")
-    components.html(open("recorder.html", "r").read(), height=300)
+    if st.button("🎙️ Start Recording"):
+        show_processing_status()
+        audio_path = record_audio()
+        hide_processing_status()
+
+        if audio_path:
+            st.audio(audio_path, format='audio/wav')
+            st.subheader("Recorded Audio Waveform")
+            plot_waveform(audio_path, title="Recorded Audio")
+
+            if st.button("Run Denoising"):
+                if model_choice == "Demucs":
+                    output_path = run_demucs(audio_path)
+                else:
+                    output_path, img_path = run_custom_denoiser(audio_path)
+
+                st.success(selected_text["denoising_complete"].format(model=model_choice))
+                st.audio(output_path, format='audio/wav')
+                plot_waveform(output_path, title=f"Denoised Audio ({model_choice})")
+
 
 # Feedback Section
 st.markdown("---")
