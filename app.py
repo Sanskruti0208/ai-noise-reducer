@@ -118,7 +118,7 @@ elif option == selected_text["record_audio"]:
         key="audio",
         mode="sendonly",
         audio_processor_factory=AudioProcessor,
-        media_stream_constraints={"audio": True, "video": False"},
+        media_stream_constraints={"audio": True, "video": False}  # Fixed line
     )
 
     if ctx.state.playing:
