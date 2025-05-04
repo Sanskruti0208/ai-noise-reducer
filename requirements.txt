@@ -1,3 +1,4 @@
+scipy
 pydub
 demucs==4.0.0
 librosa==0.10.0
