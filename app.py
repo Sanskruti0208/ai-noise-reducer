@@ -79,9 +79,9 @@ def save_audio_from_queue(output_path, sample_rate=48000):
 if option == selected_text["upload_audio"]:
     uploaded_file = st.file_uploader("Upload your noisy audio (WAV)")
     if uploaded_file:
-        if hasattr(uploaded_file, "name"):
+        try:
             filename = uploaded_file.name
-        else:
+        except AttributeError:
             filename = f"uploaded_{int(time.time())}.wav"
 
         os.makedirs("data/recorded_audio", exist_ok=True)
@@ -118,7 +118,7 @@ elif option == selected_text["record_audio"]:
         key="audio",
         mode="sendonly",
         audio_processor_factory=AudioProcessor,
-        media_stream_constraints={"audio": True, "video": False}  # Fixed line
+        media_stream_constraints={"audio": True, "video": False}
     )
 
     if ctx.state.playing:
