@@ -112,23 +112,35 @@ elif option == selected_text["record_audio"]:
 # Feedback Section
 st.subheader("🗣️ Share Your Feedback")
 
+# Rating labels
+rating_labels = {
+    1: "😞 Poor",
+    2: "😐 Fair",
+    3: "🙂 Good",
+    4: "😀 Very Good",
+    5: "🌟 Excellent"
+}
+
 with st.form("feedback_form"):
     user_feedback = st.text_area("Write your feedback:")
     star_rating = st.slider("Rate this app (1 to 5 stars)", 1, 5, 5)
+    st.markdown(f"**Selected Rating:** {rating_labels[star_rating]}")
     submit_feedback = st.form_submit_button("Submit")
 
 if submit_feedback:
     feedback_data = {
         "timestamp": str(datetime.datetime.now()),
         "feedback": user_feedback,
-        "rating": star_rating
+        "rating": star_rating,
+        "label": rating_labels[star_rating]
     }
 
-    # Save to a JSON file (append mode)
     try:
         with open("feedbacks.json", "r") as f:
             existing_data = json.load(f)
-    except FileNotFoundError:
+            if not isinstance(existing_data, list):
+                existing_data = []
+    except (FileNotFoundError, json.JSONDecodeError):
         existing_data = []
 
     existing_data.append(feedback_data)
@@ -136,18 +148,31 @@ if submit_feedback:
     with open("feedbacks.json", "w") as f:
         json.dump(existing_data, f, indent=4)
 
-    st.success("Thank you for your feedback!")
+    st.success("✅ Thank you for your feedback!")
 
-# Display All Feedbacks
+# Display Feedbacks in a scrollable container
 if os.path.exists("feedbacks.json"):
-    with open("feedbacks.json", "r") as f:
-        all_feedbacks = json.load(f)
+    try:
+        with open("feedbacks.json", "r") as f:
+            all_feedbacks = json.load(f)
+    except json.JSONDecodeError:
+        all_feedbacks = []
 
     if all_feedbacks:
         st.subheader("📋 Previous Feedbacks")
-        for item in reversed(all_feedbacks):
-            st.markdown(f"- 🗓️ **{item['timestamp']}** | ⭐ {item['rating']} stars")
-            st.markdown(f"  > {item['feedback']}")
-
+        with st.container():
+            st.markdown(
+                """
+                <div style='max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #ddd; border-radius: 10px; background-color: #f9f9f9;'>
+                """,
+                unsafe_allow_html=True
+            )
+            for item in reversed(all_feedbacks):
+                st.markdown(
+                    f"<p>🗓️ <b>{item['timestamp']}</b> | ⭐ {item['rating']} stars ({item['label']})<br>👉 {item['feedback']}</p><hr>",
+                    unsafe_allow_html=True
+                )
+            st.markdown("</div>", unsafe_allow_html=True)
+            
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
