@@ -1,5 +1,3 @@
-# language_texts.py
-
 texts = {
     "English": {
         "title": "🎙️ AI Noise Reducer",
@@ -13,7 +11,8 @@ texts = {
         "feedback_placeholder": "Write your feedback:",
         "rating_prompt": "Rate this app (1 to 5 stars)",
         "rating_labels": ["😞 Poor", "😐 Fair", "🙂 Good", "😀 Very Good", "🌟 Excellent"],
-        "previous_feedbacks": "📝 Previous Feedbacks"
+        "thank_you_feedback": "🙏 Thank you for your feedback!",
+        "see_all_feedbacks": "👁️ See All Feedbacks"
     },
     "Spanish": {
         "title": "🎙️ Reductor de Ruido AI",
@@ -26,7 +25,9 @@ texts = {
         "feedback_title": "🗣️ Comparte tus comentarios",
         "feedback_placeholder": "Escribe tus comentarios:",
         "rating_prompt": "Califica esta aplicación (1 a 5 estrellas)",
-        "rating_labels": ["😞 Pobre", "😐 Regular", "🙂 Bueno", "😀 Muy Bueno", "🌟 Excelente"]
+        "rating_labels": ["😞 Pobre", "😐 Regular", "🙂 Bueno", "😀 Muy Bueno", "🌟 Excelente"],
+        "thank_you_feedback": "🙏 ¡Gracias por tus comentarios!",
+        "see_all_feedbacks": "👁️ Ver todos los comentarios"
     },
     "French": {
         "title": "🎙️ Réducteur de Bruit AI",
@@ -39,7 +40,9 @@ texts = {
         "feedback_title": "🗣️ Donnez votre avis",
         "feedback_placeholder": "Écrivez votre avis :",
         "rating_prompt": "Notez cette application (1 à 5 étoiles)",
-        "rating_labels": ["😞 Mauvais", "😐 Passable", "🙂 Bon", "😀 Très Bon", "🌟 Excellent"]
+        "rating_labels": ["😞 Mauvais", "😐 Passable", "🙂 Bon", "😀 Très Bon", "🌟 Excellent"],
+        "thank_you_feedback": "🙏 Merci pour vos commentaires !",
+        "see_all_feedbacks": "👁️ Voir tous les commentaires"
     },
     "Marathi": {
         "title": "🎙️ एआय आवाज कमी करणारे",
@@ -52,7 +55,9 @@ texts = {
         "feedback_title": "🗣️ तुमचे अभिप्राय द्या",
         "feedback_placeholder": "तुमचे अभिप्राय लिहा:",
         "rating_prompt": "या अ‍ॅपला रेट करा (1 ते 5 स्टार)",
-        "rating_labels": ["😞 खराब", "😐 ठीक", "🙂 चांगले", "😀 खूप चांगले", "🌟 उत्कृष्ट"]
+        "rating_labels": ["😞 खराब", "😐 ठीक", "🙂 चांगले", "😀 खूप चांगले", "🌟 उत्कृष्ट"],
+        "thank_you_feedback": "🙏 तुमच्या अभिप्रायासाठी धन्यवाद!",
+        "see_all_feedbacks": "👁️ सर्व अभिप्राय पहा"
     },
     "Hindi": {
         "title": "🎙️ एआई नॉइज़ रिड्यूसर",
@@ -65,28 +70,8 @@ texts = {
         "feedback_title": "🗣️ अपना फीडबैक दें",
         "feedback_placeholder": "अपना फीडबैक लिखें:",
         "rating_prompt": "इस ऐप को रेट करें (1 से 5 स्टार)",
-        "rating_labels": ["😞 खराब", "😐 औसत", "🙂 अच्छा", "😀 बहुत अच्छा", "🌟 बेहतरीन"]
+        "rating_labels": ["😞 खराब", "😐 औसत", "🙂 अच्छा", "😀 बहुत अच्छा", "🌟 बेहतरीन"],
+        "thank_you_feedback": "🙏 आपकी प्रतिक्रिया के लिए धन्यवाद!",
+        "see_all_feedbacks": "👁️ सभी फीडबैक देखें"
     }
 }
-
-# Wrapper class to enable fallback to English
-class SafeTexts:
-    def __init__(self, texts, default_lang="English"):
-        self.texts = texts
-        self.default_lang = default_lang
-
-    def __getitem__(self, lang):
-        return SafeLang(self.texts, lang, self.default_lang)
-
-class SafeLang:
-    def __init__(self, texts, lang, default_lang):
-        self.lang = lang
-        self.default_lang = default_lang
-        self.texts = texts
-
-    def __getitem__(self, key):
-        return (self.texts.get(self.lang, {}).get(key) or
-                self.texts[self.default_lang].get(key, f"[Missing: {key}]"))
-
-# Wrap the dictionary
-texts = SafeTexts(texts)
