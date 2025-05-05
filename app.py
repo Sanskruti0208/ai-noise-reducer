@@ -127,7 +127,7 @@ with st.form("feedback_form"):
     }
     st.markdown(f"**Selected Rating:** {rating_labels[star_rating]}")
 
-    submit_feedback = st.form_submit_button(selected_text["feedback_title"])
+    submit_feedback = st.form_submit_button("Submit Feedback")
 
 if submit_feedback:
     feedback_data = {
