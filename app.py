@@ -21,7 +21,10 @@ st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
 
 # Language selection
 language = st.selectbox("Choose language for instructions:", ["English", "Spanish", "French", "Marathi", "Hindi"])
-selected_text = texts[language]
+st.session_state.language = language 
+
+# Get selected text for the current language
+selected_text = texts[st.session_state.language]
 
 # Title and Subheader
 st.title(selected_text["title"])
@@ -109,23 +112,24 @@ elif option == selected_text["record_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
-# Feedback Section
-st.subheader("🗣️ Share Your Feedback")
-
-# Rating labels
-rating_labels = {
-    1: "😞 Poor",
-    2: "😐 Fair",
-    3: "🙂 Good",
-    4: "😀 Very Good",
-    5: "🌟 Excellent"
-}
+#feedback section
+st.subheader(selected_text["feedback_section"])
 
 with st.form("feedback_form"):
     user_feedback = st.text_area("Write your feedback:")
-    star_rating = st.slider("Rate this app (1 to 5 stars)", 1, 5, 5)
+    star_rating = st.slider(selected_text["rate_app"], 1, 5, 5)
+
+    # Rating labels
+    rating_labels = {
+        1: "😞 Poor",
+        2: "😐 Fair",
+        3: "🙂 Good",
+        4: "😀 Very Good",
+        5: "🌟 Excellent"
+    }
     st.markdown(f"**Selected Rating:** {rating_labels[star_rating]}")
-    submit_feedback = st.form_submit_button("Submit")
+
+    submit_feedback = st.form_submit_button(selected_text["submit_feedback"])
 
 if submit_feedback:
     feedback_data = {
@@ -135,12 +139,15 @@ if submit_feedback:
         "label": rating_labels[star_rating]
     }
 
+    # Save feedback to JSON file
+    if not os.path.exists("feedbacks.json"):
+        with open("feedbacks.json", "w") as f:
+            json.dump([], f, indent=4)  # Create an empty list if the file doesn't exist
+
     try:
         with open("feedbacks.json", "r") as f:
             existing_data = json.load(f)
-            if not isinstance(existing_data, list):
-                existing_data = []
-    except (FileNotFoundError, json.JSONDecodeError):
+    except json.JSONDecodeError:
         existing_data = []
 
     existing_data.append(feedback_data)
@@ -148,31 +155,19 @@ if submit_feedback:
     with open("feedbacks.json", "w") as f:
         json.dump(existing_data, f, indent=4)
 
-    st.success("✅ Thank you for your feedback!")
+    st.success(selected_text["thank_you_feedback"])
 
-# Display Feedbacks in a scrollable container
+# Display Previous Feedbacks
 if os.path.exists("feedbacks.json"):
-    try:
-        with open("feedbacks.json", "r") as f:
-            all_feedbacks = json.load(f)
-    except json.JSONDecodeError:
-        all_feedbacks = []
+    with open("feedbacks.json", "r") as f:
+        all_feedbacks = json.load(f)
 
     if all_feedbacks:
-        st.subheader("📋 Previous Feedbacks")
-        with st.container():
-            st.markdown(
-                """
-                <div style='max-height: 300px; overflow-y: auto; padding: 10px; border: 1px solid #ddd; border-radius: 10px; background-color: #f9f9f9;'>
-                """,
-                unsafe_allow_html=True
-            )
+        st.subheader(selected_text["previous_feedbacks"])
+        with st.expander(selected_text["see_all_feedbacks"]):
             for item in reversed(all_feedbacks):
-                st.markdown(
-                    f"<p>🗓️ <b>{item['timestamp']}</b> | ⭐ {item['rating']} stars ({item['label']})<br>👉 {item['feedback']}</p><hr>",
-                    unsafe_allow_html=True
-                )
-            st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown(f"- 🗓️ **{item['timestamp']}** | ⭐ {item['rating']} stars ({item['label']})")
+                st.markdown(f"  > {item['feedback']}")
             
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
