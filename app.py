@@ -20,7 +20,7 @@ import json
 st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
 
 # Language selection
-language = st.selectbox("Choose language for instructions:", ["English", "Spanish", "French", "Marathi", "Hindi"])
+language = st.selectbox("Choose language for instructions:", ["English","Marathi", "Hindi"])
 st.session_state.language = language 
 
 # Get selected text for the current language
