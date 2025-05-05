@@ -85,8 +85,7 @@ elif option == selected_text["record_audio"]:
         os.makedirs(save_dir, exist_ok=True)
         recorded_wav_path = os.path.join(save_dir, "recorded.wav")
 
-        with open(recorded_wav_path, "wb") as f:
-            f.write(audio.tobytes())
+        audio.export(recorded_wav_path, format="wav")
 
         st.success("✅ Audio recorded and saved!")
         st.audio(recorded_wav_path, format='audio/wav')
