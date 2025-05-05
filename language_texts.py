@@ -12,37 +12,8 @@ texts = {
         "rating_prompt": "Rate this app (1 to 5 stars)",
         "rating_labels": ["😞 Poor", "😐 Fair", "🙂 Good", "😀 Very Good", "🌟 Excellent"],
         "thank_you_feedback": "🙏 Thank you for your feedback!",
+        "previous_feedbacks": "Previous Feedbacks",
         "see_all_feedbacks": "👁️ See All Feedbacks"
-    },
-    "Spanish": {
-        "title": "🎙️ Reductor de Ruido AI",
-        "subheader": "Sube o graba audio para eliminar el ruido de fondo.",
-        "upload_audio": "Subir Audio",
-        "record_audio": "Grabar Audio",
-        "choose_model": "Elige un modelo de reducción de ruido:",
-        "process_status": "Procesando... Por favor espera.",
-        "denoising_complete": "¡Reducción de ruido con {model} completada exitosamente!",
-        "feedback_title": "🗣️ Comparte tus comentarios",
-        "feedback_placeholder": "Escribe tus comentarios:",
-        "rating_prompt": "Califica esta aplicación (1 a 5 estrellas)",
-        "rating_labels": ["😞 Pobre", "😐 Regular", "🙂 Bueno", "😀 Muy Bueno", "🌟 Excelente"],
-        "thank_you_feedback": "🙏 ¡Gracias por tus comentarios!",
-        "see_all_feedbacks": "👁️ Ver todos los comentarios"
-    },
-    "French": {
-        "title": "🎙️ Réducteur de Bruit AI",
-        "subheader": "Téléchargez ou enregistrez de l'audio pour supprimer le bruit de fond.",
-        "upload_audio": "Télécharger Audio",
-        "record_audio": "Enregistrer Audio",
-        "choose_model": "Choisissez un modèle de réduction de bruit :",
-        "process_status": "Traitement en cours... Veuillez patienter.",
-        "denoising_complete": "Réduction de bruit par {model} terminée avec succès !",
-        "feedback_title": "🗣️ Donnez votre avis",
-        "feedback_placeholder": "Écrivez votre avis :",
-        "rating_prompt": "Notez cette application (1 à 5 étoiles)",
-        "rating_labels": ["😞 Mauvais", "😐 Passable", "🙂 Bon", "😀 Très Bon", "🌟 Excellent"],
-        "thank_you_feedback": "🙏 Merci pour vos commentaires !",
-        "see_all_feedbacks": "👁️ Voir tous les commentaires"
     },
     "Marathi": {
         "title": "🎙️ एआय आवाज कमी करणारे",
@@ -57,6 +28,7 @@ texts = {
         "rating_prompt": "या अ‍ॅपला रेट करा (1 ते 5 स्टार)",
         "rating_labels": ["😞 खराब", "😐 ठीक", "🙂 चांगले", "😀 खूप चांगले", "🌟 उत्कृष्ट"],
         "thank_you_feedback": "🙏 तुमच्या अभिप्रायासाठी धन्यवाद!",
+        "previous_feedbacks": "मागील प्रतिक्रिया"
         "see_all_feedbacks": "👁️ सर्व अभिप्राय पहा"
     },
     "Hindi": {
@@ -72,6 +44,7 @@ texts = {
         "rating_prompt": "इस ऐप को रेट करें (1 से 5 स्टार)",
         "rating_labels": ["😞 खराब", "😐 औसत", "🙂 अच्छा", "😀 बहुत अच्छा", "🌟 बेहतरीन"],
         "thank_you_feedback": "🙏 आपकी प्रतिक्रिया के लिए धन्यवाद!",
+        "previous_feedbacks": "📋 पिछले फीडबैक",
         "see_all_feedbacks": "👁️ सभी फीडबैक देखें"
     }
 }
