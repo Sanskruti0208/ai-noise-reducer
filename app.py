@@ -13,27 +13,22 @@ from scipy.io.wavfile import write
 import base64
 import io
 import streamlit.components.v1 as components
+from audiorecorder import audiorecorder
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
 
 # Language selection
 language = st.selectbox("Choose language for instructions:", ["English", "Spanish", "French", "Marathi", "Hindi"])
-
-# Set language-specific texts
 selected_text = texts[language]
 
 # Title and Subheader
 st.title(selected_text["title"])
 st.subheader(selected_text["subheader"])
 
-# Choose input method: Upload or Record
+# Input method selection
 option = st.radio("Choose input method:", [selected_text["upload_audio"], selected_text["record_audio"]])
-
-# Model selection
 model_choice = st.selectbox(selected_text["choose_model"], ["Demucs", "Custom Denoiser"])
-
-# Processing status display
 status_placeholder = st.empty()
 
 def show_processing_status():
@@ -80,90 +75,36 @@ if option == selected_text["upload_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
-# Real-Time Record Audio using HTML/JS
+# Record Audio using audiorecorder
 elif option == selected_text["record_audio"]:
     st.subheader("🎙️ Record Audio Below")
+    audio = audiorecorder("Click to record", "Recording...")
 
-    components.html(
-        """
-        <html>
-        <body>
-        <button onclick="startRecording()">Start Recording</button>
-        <button onclick="stopRecording()">Stop & Send to App</button>
-        <br /><br />
-        <audio id="audioPlayback" controls></audio>
-        <script>
-            let mediaRecorder;
-            let audioChunks = [];
+    if len(audio) > 0:
+        save_dir = "data/recorded_audio"
+        os.makedirs(save_dir, exist_ok=True)
+        recorded_wav_path = os.path.join(save_dir, "recorded.wav")
 
-            async function startRecording() {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
+        with open(recorded_wav_path, "wb") as f:
+            f.write(audio.tobytes())
 
-                mediaRecorder.ondataavailable = e => {
-                    audioChunks.push(e.data);
-                };
-                mediaRecorder.start();
-            }
+        st.success("✅ Audio recorded and saved!")
+        st.audio(recorded_wav_path, format='audio/wav')
+        plot_waveform(recorded_wav_path, title="Recorded Audio")
 
-            function stopRecording() {
-                mediaRecorder.stop();
-                mediaRecorder.onstop = () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                        const base64String = reader.result.split(',')[1];
-                        const message = JSON.stringify({ audio: base64String });
-                        const textarea = window.parent.document.querySelector('textarea');
-                        textarea.value = message;
-                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                    };
-                    reader.readAsDataURL(audioBlob);
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    document.getElementById('audioPlayback').src = audioUrl;
-                };
-            }
-        </script>
-        </body>
-        </html>
-        """,
-        height=300,
-    )
+        if st.button("Run Denoising"):
+            show_processing_status()
+            if model_choice == "Demucs":
+                output_path = run_demucs(recorded_wav_path)
+            else:
+                output_path, img_path = run_custom_denoiser(recorded_wav_path)
+            hide_processing_status()
 
-    # Capture base64 audio from the frontend
-    audio_json = st.text_area("Paste generated audio blob here (hidden field)", "", label_visibility="collapsed")
-
-    if audio_json:
-        try:
-            audio_data = eval(audio_json)["audio"]
-            audio_bytes = base64.b64decode(audio_data)
-            recorded_path = "data/recorded_audio/recorded_from_html.wav"
-            os.makedirs(os.path.dirname(recorded_path), exist_ok=True)
-
-            with open(recorded_path, "wb") as f:
-                f.write(audio_bytes)
-
-            st.success("✅ Audio received and saved!")
-            st.audio(recorded_path, format='audio/wav')
-            st.subheader("Recorded Audio Waveform")
-            plot_waveform(recorded_path, title="Recorded Audio")
-
-            if st.button("Run Denoising"):
-                show_processing_status()
-                if model_choice == "Demucs":
-                    output_path = run_demucs(recorded_path)
-                else:
-                    output_path, img_path = run_custom_denoiser(recorded_path)
-                hide_processing_status()
-
-                st.success(selected_text["denoising_complete"].format(model=model_choice))
-                st.audio(output_path, format='audio/wav')
-                plot_waveform(output_path, title=f"Denoised Audio ({model_choice})")
-                if model_choice == "Custom Denoiser":
-                    st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
-        except Exception as e:
-            st.error(f"Error processing audio: {e}")
+            st.success(selected_text["denoising_complete"].format(model=model_choice))
+            st.audio(output_path, format='audio/wav')
+            plot_waveform(output_path, title=f"Denoised Audio ({model_choice})")
+            if model_choice == "Custom Denoiser":
+                st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
 # Feedback Section
 st.markdown("---")
