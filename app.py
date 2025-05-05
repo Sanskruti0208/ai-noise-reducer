@@ -4,15 +4,9 @@ import librosa
 import librosa.display
 import matplotlib.pyplot as plt
 from denoise_audio import run_custom_denoiser, run_demucs
-import time
-import numpy as np
 import datetime
 import pandas as pd
 from language_texts import texts
-from scipy.io.wavfile import write
-import base64
-import io
-import streamlit.components.v1 as components
 from audiorecorder import audiorecorder
 
 # Set up Streamlit page configuration
@@ -48,6 +42,21 @@ def plot_waveform(audio_path, title="Waveform"):
     plt.ylabel("Amplitude")
     st.pyplot(plt)
 
+def plot_comparison_waveforms(original_path, denoised_path, model_name="Denoised"):
+    y_orig, sr = librosa.load(original_path, sr=None)
+    y_denoised, _ = librosa.load(denoised_path, sr=sr)
+
+    fig, ax = plt.subplots(2, 1, figsize=(10, 6))
+
+    ax[0].set_title("Original Noisy Audio")
+    librosa.display.waveshow(y_orig, sr=sr, ax=ax[0], alpha=0.7)
+
+    ax[1].set_title(f"Denoised Audio ({model_name})")
+    librosa.display.waveshow(y_denoised, sr=sr, ax=ax[1], alpha=0.7)
+
+    plt.tight_layout()
+    st.pyplot(fig)
+
 # Upload Audio
 if option == selected_text["upload_audio"]:
     uploaded_file = st.file_uploader("Upload your noisy audio (WAV)", type=["wav"])
@@ -64,13 +73,19 @@ if option == selected_text["upload_audio"]:
         if st.button("Run Denoising"):
             show_processing_status()
             if model_choice == "Demucs":
-                output_path = run_demucs(recorded_wav_path)
+                output_path = run_demucs(input_path)
             else:
-                output_path, img_path = run_custom_denoiser(recorded_wav_path)
+                output_path, img_path = run_custom_denoiser(input_path)
+            hide_processing_status()
 
             st.success(selected_text["denoising_complete"].format(model=model_choice))
             st.audio(output_path, format='audio/wav')
             plot_waveform(output_path, title=f"Denoised Audio ({model_choice})")
+
+            # Show comparison waveform
+            plot_comparison_waveforms(input_path, output_path, model_name=model_choice)
+
+            # Show image if Custom Denoiser
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
@@ -101,6 +116,11 @@ elif option == selected_text["record_audio"]:
             st.success(selected_text["denoising_complete"].format(model=model_choice))
             st.audio(output_path, format='audio/wav')
             plot_waveform(output_path, title=f"Denoised Audio ({model_choice})")
+
+            # Show comparison waveform
+            plot_comparison_waveforms(recorded_wav_path, output_path, model_name=model_choice)
+
+            # Show image if Custom Denoiser
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
