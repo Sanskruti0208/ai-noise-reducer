@@ -14,6 +14,7 @@ import base64
 import io
 import streamlit.components.v1 as components
 from audiorecorder import audiorecorder
+import json
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
@@ -28,6 +29,7 @@ st.subheader(selected_text["subheader"])
 
 # Input method selection
 option = st.radio("Choose input method:", [selected_text["upload_audio"], selected_text["record_audio"]])
+st.info("🔔 Tip: For better denoising quality, try using the **custom-trained model** instead of the default Demucs.")
 model_choice = st.selectbox(selected_text["choose_model"], ["Custom Denoiser", "Demucs"])
 status_placeholder = st.empty()
 
@@ -108,30 +110,33 @@ elif option == selected_text["record_audio"]:
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
 # Feedback Section
-st.markdown("---")
 st.subheader("🗣️ Share Your Feedback")
-st.markdown("How would you rate the audio quality after denoising?")
-rating = st.radio("Overall audio quality:", ["Excellent", "Good", "Average", "Poor"], key="rating")
-comment = st.text_area("💬 Additional Comments", placeholder="Any suggestions or issues you noticed...")
 
-if st.button("Submit Feedback"):
-    feedback = {
-        "timestamp": datetime.datetime.now().isoformat(),
-        "rating": rating,
-        "comment": comment
+with st.form("feedback_form"):
+    user_feedback = st.text_area("Write your feedback:")
+    star_rating = st.slider("Rate this app (1 to 5 stars)", 1, 5, 5)
+    submit_feedback = st.form_submit_button("Submit")
+
+if submit_feedback:
+    feedback_data = {
+        "timestamp": str(datetime.datetime.now()),
+        "feedback": user_feedback,
+        "rating": star_rating
     }
-    feedback_file = "feedback.csv"
-    if not os.path.exists(feedback_file):
-        pd.DataFrame([feedback]).to_csv(feedback_file, index=False)
-    else:
-        pd.DataFrame([feedback]).to_csv(feedback_file, mode='a', header=False, index=False)
-    st.success("✅ Thank you for your feedback!")
 
-if st.checkbox("📊 View Submitted Feedback (for testing only)"):
-    if os.path.exists("feedback.csv"):
-        st.dataframe(pd.read_csv("feedback.csv"))
-    else:
-        st.write("No feedback submitted yet.")
+    # Save to a JSON file (append mode)
+    try:
+        with open("feedbacks.json", "r") as f:
+            existing_data = json.load(f)
+    except FileNotFoundError:
+        existing_data = []
+
+    existing_data.append(feedback_data)
+
+    with open("feedbacks.json", "w") as f:
+        json.dump(existing_data, f, indent=4)
+
+    st.success("Thank you for your feedback!")
 
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
