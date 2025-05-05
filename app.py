@@ -95,8 +95,6 @@ elif option == selected_text["record_audio"]:
         st.success("✅ Audio recorded and saved!")
         st.audio(recorded_wav_path, format='audio/wav')
         plot_waveform(recorded_wav_path, title="Recorded Audio")
-        if model_choice == "Demucs":
-                st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
         if st.button("Run Denoising"):
             show_processing_status()
@@ -112,12 +110,12 @@ elif option == selected_text["record_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
-#feedback section
-st.subheader(selected_text["feedback_section"])
+# feedback section
+st.subheader(selected_text["feedback_title"])
 
 with st.form("feedback_form"):
-    user_feedback = st.text_area("Write your feedback:")
-    star_rating = st.slider(selected_text["rate_app"], 1, 5, 5)
+    user_feedback = st.text_area(selected_text["feedback_placeholder"])
+    star_rating = st.slider(selected_text["rating_prompt"], 1, 5, 5)
 
     # Rating labels
     rating_labels = {
@@ -129,7 +127,7 @@ with st.form("feedback_form"):
     }
     st.markdown(f"**Selected Rating:** {rating_labels[star_rating]}")
 
-    submit_feedback = st.form_submit_button(selected_text["submit_feedback"])
+    submit_feedback = st.form_submit_button(selected_text["feedback_title"])
 
 if submit_feedback:
     feedback_data = {
@@ -168,6 +166,6 @@ if os.path.exists("feedbacks.json"):
             for item in reversed(all_feedbacks):
                 st.markdown(f"- 🗓️ **{item['timestamp']}** | ⭐ {item['rating']} stars ({item['label']})")
                 st.markdown(f"  > {item['feedback']}")
-            
+
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
