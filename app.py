@@ -10,6 +10,9 @@ import datetime
 import pandas as pd
 from language_texts import texts
 from scipy.io.wavfile import write
+import base64
+import io
+import streamlit.components.v1 as components
 from audiorecorder import audiorecorder
 
 # Set up Streamlit page configuration
@@ -25,7 +28,7 @@ st.subheader(selected_text["subheader"])
 
 # Input method selection
 option = st.radio("Choose input method:", [selected_text["upload_audio"], selected_text["record_audio"]])
-model_choice = st.selectbox(selected_text["choose_model"], ["Demucs", "Custom Denoiser"])
+model_choice = st.selectbox(selected_text["choose_model"], ["Custom Denoiser", "Demucs"])
 status_placeholder = st.empty()
 
 def show_processing_status():
@@ -38,12 +41,12 @@ def hide_processing_status():
 
 def plot_waveform(audio_path, title="Waveform"):
     y, sr = librosa.load(audio_path, sr=None)
-    fig, ax = plt.subplots(figsize=(10, 4))
-    librosa.display.waveshow(y, sr=sr, alpha=0.6, ax=ax)
-    ax.set_title(title)
-    ax.set_xlabel("Time (s)")
-    ax.set_ylabel("Amplitude")
-    st.pyplot(fig)
+    plt.figure(figsize=(10, 4))
+    librosa.display.waveshow(y, sr=sr, alpha=0.6)
+    plt.title(title)
+    plt.xlabel("Time (s)")
+    plt.ylabel("Amplitude")
+    st.pyplot(plt)
 
 # Upload Audio
 if option == selected_text["upload_audio"]:
@@ -87,6 +90,8 @@ elif option == selected_text["record_audio"]:
         st.success("✅ Audio recorded and saved!")
         st.audio(recorded_wav_path, format='audio/wav')
         plot_waveform(recorded_wav_path, title="Recorded Audio")
+        if model_choice == "Demucs":
+                st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
         if st.button("Run Denoising"):
             show_processing_status()
