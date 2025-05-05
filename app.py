@@ -138,5 +138,16 @@ if submit_feedback:
 
     st.success("Thank you for your feedback!")
 
+# Display All Feedbacks
+if os.path.exists("feedbacks.json"):
+    with open("feedbacks.json", "r") as f:
+        all_feedbacks = json.load(f)
+
+    if all_feedbacks:
+        st.subheader("📋 Previous Feedbacks")
+        for item in reversed(all_feedbacks):
+            st.markdown(f"- 🗓️ **{item['timestamp']}** | ⭐ {item['rating']} stars")
+            st.markdown(f"  > {item['feedback']}")
+
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
