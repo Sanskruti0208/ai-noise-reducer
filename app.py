@@ -64,10 +64,9 @@ if option == selected_text["upload_audio"]:
         if st.button("Run Denoising"):
             show_processing_status()
             if model_choice == "Demucs":
-                output_path = run_demucs(input_path)
+                output_path = run_demucs(recorded_wav_path)
             else:
-                output_path, img_path = run_custom_denoiser(input_path)
-            hide_processing_status()
+                output_path, img_path = run_custom_denoiser(recorded_wav_path)
 
             st.success(selected_text["denoising_complete"].format(model=model_choice))
             st.audio(output_path, format='audio/wav')
