@@ -110,22 +110,23 @@ elif option == selected_text["record_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
-# Define file paths early so they're accessible everywhere
-feedback_file = "data/feedbacks.csv"
-os.makedirs("data", exist_ok=True)
+# Define file path
+feedback_dir = "data"
+feedback_file = os.path.join(feedback_dir, "feedbacks.csv")
+os.makedirs(feedback_dir, exist_ok=True)
 
-# Initialize CSV file with headers if it doesn't exist
+# Ensure CSV is initialized with headers
 if not os.path.exists(feedback_file) or os.stat(feedback_file).st_size == 0:
     with open(feedback_file, mode="w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["timestamp", "feedback", "rating", "label"])
         writer.writeheader()
 
 # Feedback section
-st.subheader(selected_text["feedback_title"])
+st.subheader("🗣️ Share Your Feedback")
 
 with st.form(key="feedback_form"):
-    user_feedback = st.text_area(selected_text["feedback_placeholder"])
-    star_rating = st.slider(selected_text["rating_prompt"], 1, 5, 5)
+    user_feedback = st.text_area("Write your feedback:")
+    star_rating = st.slider("Rate this app (1 to 5 stars)", 1, 5, 5)
 
     rating_labels = {
         1: "😞 Poor",
@@ -134,41 +135,39 @@ with st.form(key="feedback_form"):
         4: "😀 Very Good",
         5: "🌟 Excellent"
     }
-    st.markdown(f"**Selected Rating:** {rating_labels[star_rating]}")
 
+    st.markdown(f"**Selected Rating:** {rating_labels[star_rating]}")
     submit_feedback = st.form_submit_button("Submit Feedback")
 
 if submit_feedback:
-    feedback_entry = [
-        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        user_feedback.strip(),
-        star_rating,
-        rating_labels[star_rating]
-    ]
-
-    # Check if we need to write headers
-    write_header = not os.path.exists(feedback_file)
+    feedback_entry = {
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "feedback": user_feedback.strip() if user_feedback.strip() else "No comment",
+        "rating": star_rating,
+        "label": rating_labels[star_rating]
+    }
 
     try:
-        with open(feedback_file, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            if write_header:
-                writer.writerow(["timestamp", "feedback", "rating", "label"])
+        with open(feedback_file, mode="a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["timestamp", "feedback", "rating", "label"])
             writer.writerow(feedback_entry)
-        st.success(selected_text["thank_you_feedback"])
+        st.success("🙏 Thank you for your feedback!")
     except Exception as e:
         st.error(f"Error saving feedback: {e}")
 
-# Show previous feedbacks
+# Display previous feedbacks
 if os.path.exists(feedback_file):
     try:
         df = pd.read_csv(feedback_file)
-        if not df.empty:
-            st.subheader(selected_text["previous_feedbacks"])
-            with st.expander(selected_text["see_all_feedbacks"]):
-                for _, row in df[::-1].iterrows():  # Reverse order
+
+        if not df.empty and "timestamp" in df.columns:
+            st.subheader("Previous Feedbacks")
+            with st.expander("👁️ See All Feedbacks"):
+                for _, row in df[::-1].iterrows():
                     st.markdown(f"- 🗓️ **{row['timestamp']}** | ⭐ {row['rating']} stars ({row['label']})")
                     st.markdown(f"  > {row['feedback']}")
+        else:
+            st.info("No feedbacks yet.")
     except Exception as e:
         st.warning(f"⚠️ Unable to read previous feedbacks: {e}")
         
