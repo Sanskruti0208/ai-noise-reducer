@@ -32,7 +32,7 @@ st.subheader(selected_text["subheader"])
 
 # Input method selection
 option = st.radio("Choose input method:", [selected_text["upload_audio"], selected_text["record_audio"]])
-st.info(texts[language].get("tip", ""))
+st.info(selected_text.get("tip", ""))
 model_choice = st.selectbox(selected_text["choose_model"], ["Custom Denoiser", "Demucs"])
 status_placeholder = st.empty()
 
