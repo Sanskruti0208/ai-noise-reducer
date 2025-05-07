@@ -80,65 +80,36 @@ if option == selected_text["upload_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
-# Record Audio using audiorecorder
-elif option == selected_text["record_audio"]:
-    st.subheader("🎙️ Record Audio Below")
-    audio = audiorecorder("Click to record", "Recording...")
+import os
+import csv
+import datetime
+import pandas as pd
+import streamlit as st
 
-    if len(audio) > 0:
-        save_dir = "data/recorded_audio"
-        os.makedirs(save_dir, exist_ok=True)
-        recorded_wav_path = os.path.join(save_dir, "recorded.wav")
-
-        audio.export(recorded_wav_path, format="wav")
-
-        st.success("✅ Audio recorded and saved!")
-        st.audio(recorded_wav_path, format='audio/wav')
-        plot_waveform(recorded_wav_path, title="Recorded Audio")
-
-        if st.button("Run Denoising"):
-            show_processing_status()
-            if model_choice == "Demucs":
-                output_path = run_demucs(recorded_wav_path)
-            else:
-                output_path, img_path = run_custom_denoiser(recorded_wav_path)
-            hide_processing_status()
-
-            st.success(selected_text["denoising_complete"].format(model=model_choice))
-            st.audio(output_path, format='audio/wav')
-            plot_waveform(output_path, title=f"Denoised Audio ({model_choice})")
-            if model_choice == "Custom Denoiser":
-                st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
-
-# Define file path
+# Setup file paths
 feedback_dir = "data"
 feedback_file = os.path.join(feedback_dir, "feedbacks.csv")
 os.makedirs(feedback_dir, exist_ok=True)
 
-# Ensure CSV is initialized with headers
-if not os.path.exists(feedback_file) or os.stat(feedback_file).st_size == 0:
-    with open(feedback_file, mode="w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["timestamp", "feedback", "rating", "label"])
-        writer.writeheader()
+# Rating labels
+rating_labels = {
+    1: "😞 Poor",
+    2: "😐 Fair",
+    3: "🙂 Good",
+    4: "😀 Very Good",
+    5: "🌟 Excellent"
+}
 
-# Feedback section
+# Feedback section UI
 st.subheader("🗣️ Share Your Feedback")
 
 with st.form(key="feedback_form"):
     user_feedback = st.text_area("Write your feedback:")
     star_rating = st.slider("Rate this app (1 to 5 stars)", 1, 5, 5)
-
-    rating_labels = {
-        1: "😞 Poor",
-        2: "😐 Fair",
-        3: "🙂 Good",
-        4: "😀 Very Good",
-        5: "🌟 Excellent"
-    }
-
     st.markdown(f"**Selected Rating:** {rating_labels[star_rating]}")
     submit_feedback = st.form_submit_button("Submit Feedback")
 
+# Save feedback to CSV
 if submit_feedback:
     feedback_entry = {
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -147,21 +118,24 @@ if submit_feedback:
         "label": rating_labels[star_rating]
     }
 
+    file_exists = os.path.isfile(feedback_file)
     try:
         with open(feedback_file, mode="a", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=["timestamp", "feedback", "rating", "label"])
+            if not file_exists:
+                writer.writeheader()
             writer.writerow(feedback_entry)
+
         st.success("🙏 Thank you for your feedback!")
     except Exception as e:
         st.error(f"Error saving feedback: {e}")
 
-# Display previous feedbacks
+# Show previous feedbacks
 if os.path.exists(feedback_file):
     try:
         df = pd.read_csv(feedback_file)
-
-        if not df.empty and "timestamp" in df.columns:
-            st.subheader("Previous Feedbacks")
+        if not df.empty:
+            st.subheader("📋 Previous Feedbacks")
             with st.expander("👁️ See All Feedbacks"):
                 for _, row in df[::-1].iterrows():
                     st.markdown(f"- 🗓️ **{row['timestamp']}** | ⭐ {row['rating']} stars ({row['label']})")
