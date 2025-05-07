@@ -14,7 +14,7 @@ import base64
 import io
 import streamlit.components.v1 as components
 from audiorecorder import audiorecorder
-import csv
+import json
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
@@ -80,64 +80,66 @@ if option == selected_text["upload_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
                 
-# Setup file paths
+# Define file paths early so they're accessible everywhere
 feedback_dir = "data"
-feedback_file = os.path.join(feedback_dir, "feedbacks.csv")
+feedback_file = os.path.join(feedback_dir, "feedbacks.json")
 os.makedirs(feedback_dir, exist_ok=True)
 
-# Rating labels
-rating_labels = {
-    1: "😞 Poor",
-    2: "😐 Fair",
-    3: "🙂 Good",
-    4: "😀 Very Good",
-    5: "🌟 Excellent"
-}
-
-# Feedback section UI
-st.subheader("🗣️ Share Your Feedback")
+# Feedback section
+st.subheader(selected_text["feedback_title"])
 
 with st.form(key="feedback_form"):
-    user_feedback = st.text_area("Write your feedback:")
-    star_rating = st.slider("Rate this app (1 to 5 stars)", 1, 5, 5)
+    user_feedback = st.text_area(selected_text["feedback_placeholder"])
+    star_rating = st.slider(selected_text["rating_prompt"], 1, 5, 5)
+
+    rating_labels = {
+        1: "😞 Poor",
+        2: "😐 Fair",
+        3: "🙂 Good",
+        4: "😀 Very Good",
+        5: "🌟 Excellent"
+    }
     st.markdown(f"**Selected Rating:** {rating_labels[star_rating]}")
+
     submit_feedback = st.form_submit_button("Submit Feedback")
 
-# Save feedback to CSV
 if submit_feedback:
     feedback_entry = {
         "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "feedback": user_feedback.strip() if user_feedback.strip() else "No comment",
+        "feedback": user_feedback.strip(),
         "rating": star_rating,
         "label": rating_labels[star_rating]
     }
 
-    file_exists = os.path.isfile(feedback_file)
     try:
-        with open(feedback_file, mode="a", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=["timestamp", "feedback", "rating", "label"])
-            if not file_exists:
-                writer.writeheader()
-            writer.writerow(feedback_entry)
+        with open(feedback_file, "r", encoding="utf-8") as f:
+            feedback_list = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        feedback_list = []
 
-        st.success("🙏 Thank you for your feedback!")
+    feedback_list.append(feedback_entry)
+
+    try:
+        with open(feedback_file, "w", encoding="utf-8") as f:
+            json.dump(feedback_list, f, indent=4, ensure_ascii=False)
+        st.success(selected_text["thank_you_feedback"])
     except Exception as e:
         st.error(f"Error saving feedback: {e}")
 
 # Show previous feedbacks
 if os.path.exists(feedback_file):
     try:
-        df = pd.read_csv(feedback_file)
-        if not df.empty:
-            st.subheader("📋 Previous Feedbacks")
-            with st.expander("👁️ See All Feedbacks"):
-                for _, row in df[::-1].iterrows():
-                    st.markdown(f"- 🗓️ **{row['timestamp']}** | ⭐ {row['rating']} stars ({row['label']})")
-                    st.markdown(f"  > {row['feedback']}")
-        else:
-            st.info("No feedbacks yet.")
-    except Exception as e:
-        st.warning(f"⚠️ Unable to read previous feedbacks: {e}")
+        with open(feedback_file, "r", encoding="utf-8") as f:
+            previous_feedbacks = json.load(f)
+
+        if previous_feedbacks:
+            st.subheader(selected_text["previous_feedbacks"])
+            with st.expander(selected_text["see_all_feedbacks"]):
+                for item in reversed(previous_feedbacks):
+                    st.markdown(f"- 🗓️ **{item['timestamp']}** | ⭐ {item['rating']} stars ({item['label']})")
+                    st.markdown(f"  > {item['feedback']}")
+    except json.JSONDecodeError:
+        st.warning("⚠️ Feedback data file seems corrupted.")
         
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
