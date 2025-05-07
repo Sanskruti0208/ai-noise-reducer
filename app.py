@@ -55,7 +55,7 @@ def plot_waveform(audio_path, title="Waveform"):
 
 # Upload Audio
 if option == selected_text["upload_audio"]:
-    uploaded_file = st.file_uploader(texts[lang]["upload_noisy_audio"], type=["wav"])
+    uploaded_file = st.file_uploader(selected_text["upload_noisy_audio"], type=["wav"])
     if uploaded_file:
         input_path = os.path.join("data", "recorded_audio", uploaded_file.name)
         os.makedirs(os.path.dirname(input_path), exist_ok=True)
