@@ -130,7 +130,7 @@ with st.form(key="feedback_form"):
 
 if submit_feedback:
     feedback_entry = {
-        "timestamp": str(datetime.datetime.now()),
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "feedback": user_feedback.strip(),
         "rating": star_rating,
         "label": rating_labels[star_rating]
@@ -141,19 +141,16 @@ if submit_feedback:
     os.makedirs(feedback_dir, exist_ok=True)
 
     try:
-        if os.path.exists(feedback_file):
-            with open(feedback_file, "r", encoding="utf-8") as f:
-                feedback_list = json.load(f)
-        else:
-            feedback_list = []
-    except (json.JSONDecodeError, FileNotFoundError):
+        with open(feedback_file, "r", encoding="utf-8") as f:
+            feedback_list = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
         feedback_list = []
 
     feedback_list.append(feedback_entry)
 
     try:
         with open(feedback_file, "w", encoding="utf-8") as f:
-            json.dump(feedback_list, f, indent=4)
+            json.dump(feedback_list, f, indent=4, ensure_ascii=False)
         st.success(selected_text["thank_you_feedback"])
     except Exception as e:
         st.error(f"Error saving feedback: {e}")
