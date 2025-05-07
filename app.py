@@ -113,7 +113,6 @@ elif option == selected_text["record_audio"]:
 # Feedback section
 st.subheader(selected_text["feedback_title"])
 
-# Unique form key to prevent duplicate form behavior
 with st.form(key="feedback_form"):
     user_feedback = st.text_area(selected_text["feedback_placeholder"])
     star_rating = st.slider(selected_text["rating_prompt"], 1, 5, 5)
@@ -137,8 +136,9 @@ if submit_feedback:
         "label": rating_labels[star_rating]
     }
 
-    feedback_file = "feedbacks.json"
-    os.makedirs("data", exist_ok=True)
+    feedback_dir = "data"
+    feedback_file = os.path.join(feedback_dir, "feedbacks.json")
+    os.makedirs(feedback_dir, exist_ok=True)
 
     try:
         if os.path.exists(feedback_file):
@@ -159,9 +159,9 @@ if submit_feedback:
         st.error(f"Error saving feedback: {e}")
 
 # Show previous feedbacks
-if os.path.exists("feedbacks.json"):
+if os.path.exists(feedback_file):
     try:
-        with open("feedbacks.json", "r", encoding="utf-8") as f:
+        with open(feedback_file, "r", encoding="utf-8") as f:
             previous_feedbacks = json.load(f)
 
         if previous_feedbacks:
