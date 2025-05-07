@@ -110,6 +110,11 @@ elif option == selected_text["record_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
+# Define file paths early so they're accessible everywhere
+feedback_dir = "data"
+feedback_file = os.path.join(feedback_dir, "feedbacks.json")
+os.makedirs(feedback_dir, exist_ok=True)
+
 # Feedback section
 st.subheader(selected_text["feedback_title"])
 
@@ -135,10 +140,6 @@ if submit_feedback:
         "rating": star_rating,
         "label": rating_labels[star_rating]
     }
-
-    feedback_dir = "data"
-    feedback_file = os.path.join(feedback_dir, "feedbacks.json")
-    os.makedirs(feedback_dir, exist_ok=True)
 
     try:
         with open(feedback_file, "r", encoding="utf-8") as f:
@@ -169,6 +170,6 @@ if os.path.exists(feedback_file):
                     st.markdown(f"  > {item['feedback']}")
     except json.JSONDecodeError:
         st.warning("⚠️ Feedback data file seems corrupted.")
-
+        
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
