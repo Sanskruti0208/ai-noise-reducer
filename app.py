@@ -14,7 +14,7 @@ import base64
 import io
 import streamlit.components.v1 as components
 from audiorecorder import audiorecorder
-import json
+import csv
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
@@ -112,7 +112,7 @@ elif option == selected_text["record_audio"]:
 
 # Define file paths early so they're accessible everywhere
 feedback_dir = "data"
-feedback_file = os.path.join(feedback_dir, "feedbacks.json")
+feedback_file = os.path.join(feedback_dir, "feedbacks.csv")
 os.makedirs(feedback_dir, exist_ok=True)
 
 # Feedback section
@@ -134,24 +134,22 @@ with st.form(key="feedback_form"):
     submit_feedback = st.form_submit_button("Submit Feedback")
 
 if submit_feedback:
-    feedback_entry = {
-        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "feedback": user_feedback.strip(),
-        "rating": star_rating,
-        "label": rating_labels[star_rating]
-    }
+    feedback_entry = [
+        datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        user_feedback.strip(),
+        star_rating,
+        rating_labels[star_rating]
+    ]
+
+    # Check if we need to write headers
+    write_header = not os.path.exists(feedback_file)
 
     try:
-        with open(feedback_file, "r", encoding="utf-8") as f:
-            feedback_list = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        feedback_list = []
-
-    feedback_list.append(feedback_entry)
-
-    try:
-        with open(feedback_file, "w", encoding="utf-8") as f:
-            json.dump(feedback_list, f, indent=4, ensure_ascii=False)
+        with open(feedback_file, "a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            if write_header:
+                writer.writerow(["timestamp", "feedback", "rating", "label"])
+            writer.writerow(feedback_entry)
         st.success(selected_text["thank_you_feedback"])
     except Exception as e:
         st.error(f"Error saving feedback: {e}")
@@ -159,17 +157,15 @@ if submit_feedback:
 # Show previous feedbacks
 if os.path.exists(feedback_file):
     try:
-        with open(feedback_file, "r", encoding="utf-8") as f:
-            previous_feedbacks = json.load(f)
-
-        if previous_feedbacks:
+        df = pd.read_csv(feedback_file)
+        if not df.empty:
             st.subheader(selected_text["previous_feedbacks"])
             with st.expander(selected_text["see_all_feedbacks"]):
-                for item in reversed(previous_feedbacks):
-                    st.markdown(f"- 🗓️ **{item['timestamp']}** | ⭐ {item['rating']} stars ({item['label']})")
-                    st.markdown(f"  > {item['feedback']}")
-    except json.JSONDecodeError:
-        st.warning("⚠️ Feedback data file seems corrupted.")
+                for _, row in df[::-1].iterrows():  # Reverse order
+                    st.markdown(f"- 🗓️ **{row['timestamp']}** | ⭐ {row['rating']} stars ({row['label']})")
+                    st.markdown(f"  > {row['feedback']}")
+    except Exception as e:
+        st.warning(f"⚠️ Unable to read previous feedbacks: {e}")
         
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
