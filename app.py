@@ -111,9 +111,14 @@ elif option == selected_text["record_audio"]:
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
 # Define file paths early so they're accessible everywhere
-feedback_dir = "data"
-feedback_file = os.path.join(feedback_dir, "feedbacks.csv")
-os.makedirs(feedback_dir, exist_ok=True)
+feedback_file = "data/feedbacks.csv"
+os.makedirs("data", exist_ok=True)
+
+# Initialize CSV file with headers if it doesn't exist
+if not os.path.exists(feedback_file) or os.stat(feedback_file).st_size == 0:
+    with open(feedback_file, mode="w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["timestamp", "feedback", "rating", "label"])
+        writer.writeheader()
 
 # Feedback section
 st.subheader(selected_text["feedback_title"])
