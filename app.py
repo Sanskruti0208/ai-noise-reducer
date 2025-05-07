@@ -80,6 +80,36 @@ if option == selected_text["upload_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
                 
+# Record Audio
+elif option == selected_text["record_audio"]:
+    st.info("Click to start/stop recording below:")
+    audio = audiorecorder("Start Recording", "Stop Recording")
+
+    if len(audio) > 0:
+        # Save recorded audio
+        recorded_path = os.path.join("data", "recorded_audio", "recorded.wav")
+        os.makedirs(os.path.dirname(recorded_path), exist_ok=True)
+        audio.export(recorded_path, format="wav")
+
+        st.audio(recorded_path, format="audio/wav")
+        st.subheader("Recorded Audio Waveform")
+        plot_waveform(recorded_path, title="Recorded Noisy Audio")
+
+        if st.button("Run Denoising"):
+            show_processing_status()
+            if model_choice == "Demucs":
+                output_path = run_demucs(recorded_path)
+            else:
+                output_path, img_path = run_custom_denoiser(recorded_path)
+            hide_processing_status()
+
+            st.success(selected_text["denoising_complete"].format(model=model_choice))
+            st.audio(output_path, format="audio/wav")
+            plot_waveform(output_path, title=f"Denoised Audio ({model_choice})")
+
+            if model_choice == "Custom Denoiser":
+                st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
+
 # Define file paths early so they're accessible everywhere
 feedback_dir = "data"
 feedback_file = os.path.join(feedback_dir, "feedbacks.json")
