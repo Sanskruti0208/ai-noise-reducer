@@ -110,14 +110,14 @@ elif option == selected_text["record_audio"]:
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
 
-# feedback section
+# Feedback section
 st.subheader(selected_text["feedback_title"])
 
-with st.form("feedback_form"):
+# Unique form key to prevent duplicate form behavior
+with st.form(key="feedback_form"):
     user_feedback = st.text_area(selected_text["feedback_placeholder"])
     star_rating = st.slider(selected_text["rating_prompt"], 1, 5, 5)
 
-    # Rating labels
     rating_labels = {
         1: "😞 Poor",
         2: "😐 Fair",
@@ -130,42 +130,48 @@ with st.form("feedback_form"):
     submit_feedback = st.form_submit_button("Submit Feedback")
 
 if submit_feedback:
-    feedback_data = {
+    feedback_entry = {
         "timestamp": str(datetime.datetime.now()),
-        "feedback": user_feedback,
+        "feedback": user_feedback.strip(),
         "rating": star_rating,
         "label": rating_labels[star_rating]
     }
 
-    # Save feedback to JSON file
-    if not os.path.exists("feedbacks.json"):
-        with open("feedbacks.json", "w") as f:
-            json.dump([], f, indent=4)  # Create an empty list if the file doesn't exist
+    feedback_file = "feedbacks.json"
+    os.makedirs("data", exist_ok=True)
 
     try:
-        with open("feedbacks.json", "r") as f:
-            existing_data = json.load(f)
-    except json.JSONDecodeError:
-        existing_data = []
+        if os.path.exists(feedback_file):
+            with open(feedback_file, "r", encoding="utf-8") as f:
+                feedback_list = json.load(f)
+        else:
+            feedback_list = []
+    except (json.JSONDecodeError, FileNotFoundError):
+        feedback_list = []
 
-    existing_data.append(feedback_data)
+    feedback_list.append(feedback_entry)
 
-    with open("feedbacks.json", "w") as f:
-        json.dump(existing_data, f, indent=4)
+    try:
+        with open(feedback_file, "w", encoding="utf-8") as f:
+            json.dump(feedback_list, f, indent=4)
+        st.success(selected_text["thank_you_feedback"])
+    except Exception as e:
+        st.error(f"Error saving feedback: {e}")
 
-    st.success(selected_text["thank_you_feedback"])
-
-# Display Previous Feedbacks
+# Show previous feedbacks
 if os.path.exists("feedbacks.json"):
-    with open("feedbacks.json", "r") as f:
-        all_feedbacks = json.load(f)
+    try:
+        with open("feedbacks.json", "r", encoding="utf-8") as f:
+            previous_feedbacks = json.load(f)
 
-    if all_feedbacks:
-        st.subheader(selected_text["previous_feedbacks"])
-        with st.expander(selected_text["see_all_feedbacks"]):
-            for item in reversed(all_feedbacks):
-                st.markdown(f"- 🗓️ **{item['timestamp']}** | ⭐ {item['rating']} stars ({item['label']})")
-                st.markdown(f"  > {item['feedback']}")
+        if previous_feedbacks:
+            st.subheader(selected_text["previous_feedbacks"])
+            with st.expander(selected_text["see_all_feedbacks"]):
+                for item in reversed(previous_feedbacks):
+                    st.markdown(f"- 🗓️ **{item['timestamp']}** | ⭐ {item['rating']} stars ({item['label']})")
+                    st.markdown(f"  > {item['feedback']}")
+    except json.JSONDecodeError:
+        st.warning("⚠️ Feedback data file seems corrupted.")
 
 st.markdown("---")
 st.markdown("Made with ❤️ for sound clarity | [GitHub Repo](https://github.com/yourusername/ai-noise-reducer)")
