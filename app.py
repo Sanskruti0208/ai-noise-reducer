@@ -14,7 +14,7 @@ import base64
 import io
 import streamlit.components.v1 as components
 from audiorecorder import audiorecorder
-import csv
+import json
 
 # Set up Streamlit page configuration
 st.set_page_config(page_title="🎙️ AI Noise Reducer", layout="centered")
@@ -79,13 +79,7 @@ if option == selected_text["upload_audio"]:
             plot_waveform(output_path, title=f"Denoised Audio ({model_choice})")
             if model_choice == "Custom Denoiser":
                 st.image(img_path, caption="Comparison (Noisy vs. Denoised)", use_column_width=True)
-
-import os
-import csv
-import datetime
-import pandas as pd
-import streamlit as st
-
+                
 # Setup file paths
 feedback_dir = "data"
 feedback_file = os.path.join(feedback_dir, "feedbacks.csv")
