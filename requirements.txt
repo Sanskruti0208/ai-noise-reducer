@@ -1,9 +1,8 @@
 streamlit==1.33.0
-streamlit-audiorecorder
-streamlit-webrtc==0.45.0
+audiorecorder==0.1
+librosa==0.10.0
 soundfile==0.12.1
 sounddevice==0.4.6
-librosa==0.10.0
 numpy==1.24.4
 scipy==1.10.1
 pydub==0.25.1
@@ -13,10 +12,3 @@ matplotlib==3.7.1
 pandas==1.5.1
 altair==5.1.1
 rich==13.7.0
-aioice==0.10.1
-aiortc==1.10.1
-av==10.0.0
-attrs==23.2.0
-click==8.1.7
-requests==2.31.0
-typing_extensions==4.8.0
