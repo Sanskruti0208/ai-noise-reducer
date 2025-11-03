@@ -7,7 +7,6 @@ aioice==0.10.1
 aiortc==1.10.1
 altair==5.5.0
 attrs==23.2.0
-av==9.2.0
 blinker==1.6.2
 cachetools==5.5.2
 certifi==2025.4.26
@@ -74,3 +73,4 @@ typing_extensions==4.13.2
 urllib3==2.4.0
 watchdog==6.0.0
 Werkzeug==3.0.0
+
